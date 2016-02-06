@@ -44,9 +44,19 @@
                         </configuration>
                     </execution>
                 </executions>
-            </plugin>            
+			</plugin>            
+
         </plugins>      
     </build>
+
+	<repositories>
+		<repository>
+			<id>project.local</id>
+			<name>project</name>
+			<url>file://${project.basedir}/libraries</url>
+		</repository>
+	</repositories>
+
     <dependencies>
         <!-- A lot of dependencies are listed as "provided" which means you must 
         include them on the classpath wherever the jar is used. This gives 
@@ -64,16 +74,9 @@
         <dependency>
             <groupId>edu.iris</groupId>
             <artifactId>IRIS-WS</artifactId>
-            <version>2.0.15</version>
-            <scope>system</scope>
-            <systemPath>${basedir}/libraries/IRIS-WS-2.0.15.jar</systemPath>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.avro</groupId>
-            <artifactId>avro</artifactId>
-            <version>1.7.7</version>
+			<version>2.0.15</version>
 		</dependency>
+
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>

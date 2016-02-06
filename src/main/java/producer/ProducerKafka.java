@@ -108,7 +108,7 @@ public class ProducerKafka {
 		List<Timeseries> timeSeriesCollection = null;
 		try {
 			timeSeriesCollection = waveformService.fetch(criteria);
-		} catch (NoDataFoundException | IOException | CriteriaException | ServiceNotSupportedException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		return timeSeriesCollection;
