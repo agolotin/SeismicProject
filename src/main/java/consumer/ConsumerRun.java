@@ -10,7 +10,7 @@ public class ConsumerRun {
 	
 	public static void main(String[] args) { 
 		  int numConsumers = 1;
-		  String groupId = "seismic-data";
+		  String groupId = "seismic-events";
 		  
 		  String topic = "test";
 		  final ExecutorService executor = Executors.newFixedThreadPool(numConsumers);

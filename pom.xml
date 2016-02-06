@@ -66,9 +66,19 @@
             <artifactId>IRIS-WS</artifactId>
             <version>2.0.15</version>
             <scope>system</scope>
-            <systemPath>${basedir}/IRIS-WS-2.0.15.jar</systemPath>
+            <systemPath>${basedir}/libraries/IRIS-WS-2.0.15.jar</systemPath>
         </dependency>
-        
+
+        <dependency>
+            <groupId>org.apache.avro</groupId>
+            <artifactId>avro</artifactId>
+            <version>1.7.7</version>
+		</dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.7.1</version>
+        </dependency>
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
@@ -86,14 +96,14 @@
         </dependency>
         <dependency>
             <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-indexing</artifactId>
+            <artifactId>ignite-tools</artifactId>
             <version>${ignite.version}</version>
         </dependency>
-		<dependency>
-			<groupId>org.apache.ignite</groupId>
-			<artifactId>ignite-tools</artifactId>
-			<version>${ignite.version}</version>
-		</dependency>
+        <dependency>
+            <groupId>com.esotericsoftware</groupId>
+            <artifactId>kryo-shaded</artifactId>
+            <version>3.0.3</version>
+        </dependency>
         
     </dependencies>
 </project>

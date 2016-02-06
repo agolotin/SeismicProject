@@ -1,15 +1,19 @@
 package main.java.consumer;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
+
+import main.java.timeseries.TimeseriesCustom;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.errors.WakeupException;
 
-@SuppressWarnings({"unchecked", "rawtypes"})
-public class ConsumerKafka implements Runnable{
+import edu.iris.dmc.timeseries.model.Timeseries;
+
+public class ConsumerKafka implements Runnable {
 
 	private KafkaConsumer consumer;
     private String topic;
@@ -26,16 +30,14 @@ public class ConsumerKafka implements Runnable{
         props.put("enable.auto.commit", "true");
         props.put("auto.commit.interval.ms", "1000");
         props.put("session.timeout.ms", "30000");
-        props.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
-        props.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
-
+        props.put("key.deserializer", "main.java.producer.decoder.TimeseriesDecoder");
+        props.put("value.deserializer", "main.java.producer.decoder.TimeseriesDecoder");
+        
         consumer = new KafkaConsumer<>(props);
     }
     
 	@Override
     public void run() {
-        System.out.println("Kafka Consumer starting...");
-        
         // log4j writes to stdout for now
         org.apache.log4j.BasicConfigurator.configure();
 
@@ -43,9 +45,14 @@ public class ConsumerKafka implements Runnable{
         	consumer.subscribe(Arrays.asList(topic));
         
 			while (true) {
-				ConsumerRecords<String, String> records = consumer.poll(Long.MAX_VALUE);
-				for (ConsumerRecord<String, String> record : records) {
-					System.out.printf("offset = %d, value = %s", record.offset(), record.value());
+				ConsumerRecords<String, TimeseriesCustom> records = consumer.poll(Long.MAX_VALUE);
+				//ConsumerRecords<String, String> records = consumer.poll(Long.MAX_VALUE);
+				for (ConsumerRecord record : records) {
+					TimeseriesCustom timeseries = (TimeseriesCustom) record.value();
+					System.out.println("offset = " + record.offset());
+					System.out.println(timeseries.toString());
+					System.out.println("Size of segments: " + timeseries.getSegments().size());
+					System.out.println("Size of intData in segments: " + timeseries.getSegments().iterator().next().getIntegerData().size());
 				}
 			}
         }

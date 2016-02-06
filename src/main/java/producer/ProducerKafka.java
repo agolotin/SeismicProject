@@ -1,9 +1,11 @@
 package main.java.producer;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Properties;
 
 import kafka.common.TopicExistsException;
+import main.java.timeseries.TimeseriesCustom;
 
 import java.text.*;
 import java.util.*;
@@ -13,12 +15,11 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 
 import edu.iris.dmc.criteria.*;  
 import edu.iris.dmc.service.*;
-import edu.iris.dmc.timeseries.model.Segment;
 import edu.iris.dmc.timeseries.model.Timeseries;
 
 public class ProducerKafka {
 
-    private KafkaProducer<String, String> producer;
+    private KafkaProducer producer;
 	List<String> stationList = new ArrayList<String>();
 
     public ProducerKafka() {}
@@ -28,7 +29,7 @@ public class ProducerKafka {
         ProducerKafka prod = new ProducerKafka();
         try {
             prod.runKafkaProducer();
-        } catch (TopicExistsException e) {
+        } catch (TopicExistsException | IOException e) {
             e.printStackTrace();
         }
 
@@ -43,14 +44,13 @@ public class ProducerKafka {
         props.put("batch.size", 16384);
         props.put("linger.ms", 1);
         props.put("buffer.memory", 33554432);
-        props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-        props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+        props.put("key.serializer", "main.java.producer.encoder.TimeseriesEncoder");
+        props.put("value.serializer", "main.java.producer.encoder.TimeseriesEncoder");
 
         this.producer = new KafkaProducer<>(props);
     }
 
-    public void runKafkaProducer() {
-        System.out.println("Kafka Producer starting...");
+	public void runKafkaProducer() throws IOException {
         // log4j writes to stdout for now
         org.apache.log4j.BasicConfigurator.configure();
 
@@ -61,13 +61,24 @@ public class ProducerKafka {
             e.printStackTrace();
         }
 
-        this.producer.send(new ProducerRecord<>("test", "key", "message"));
+        List<Timeseries> timeSeriesCollection = this.getIrisMessage();
+        
+        for (Timeseries timeseries : timeSeriesCollection) {
+        	TimeseriesCustom ts = new TimeseriesCustom(timeseries.getNetworkCode(), timeseries.getStationCode(), timeseries.getLocation(), timeseries.getChannelCode());
+        	ts.setSegments(timeseries.getSegments());
+        	ts.setChannel(timeseries.getChannel());
+        	ts.setDataQuality(timeseries.getDataQuality());
+        	
+			ProducerRecord<String, TimeseriesCustom> data = new ProducerRecord<String, TimeseriesCustom>("test", ts);
+			this.producer.send(data);
+        }
+        //this.producer.send(new ProducerRecord<>("test", "key", "message"));
         this.producer.close();
     }
 
-	private void getIrisMessage() throws IOException {
+	private List<Timeseries> getIrisMessage() throws IOException {
 		ServiceUtil serviceUtil = ServiceUtil.getInstance();
-		serviceUtil.setAppName("Seismic Event data");
+		serviceUtil.setAppName("SeismicEventsData");
 		WaveformService waveformService = serviceUtil.getWaveformService();
 		
 		DateFormat dfm = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
@@ -76,7 +87,7 @@ public class ProducerKafka {
 		Date endDate = null;
 		try {
 			startDate = dfm.parse("2005-02-17T00:00:00");
-			endDate = dfm.parse("2005-02-17T00:01:00");
+			endDate = dfm.parse("2005-02-17T00:00:02");
 		} catch (ParseException e) {
 			e.printStackTrace();
 		}
@@ -100,19 +111,6 @@ public class ProducerKafka {
 		} catch (NoDataFoundException | IOException | CriteriaException | ServiceNotSupportedException e) {
 			e.printStackTrace();
 		}
-		
-		for(Timeseries timeseries : timeSeriesCollection){
-			   System.out.println(timeseries.getNetworkCode() + "-" +
-			   timeseries.getStationCode() + " (" + timeseries.getChannelCode() + "), loc:" +
-			      timeseries.getLocation());
-			      for(Segment segment:timeseries.getSegments()){
-			         System.out.printf("Segment:\n");
-			         System.out.printf("  Start: %s", segment.getStartTime());
-			         System.out.printf("  End: %s", segment.getEndTime());
-			         System.out.printf(":  %d samples exist in this segment\n",
-			            segment.getSampleCount());         
-			   }
-		}
-		
+		return timeSeriesCollection;
 	}
 }
