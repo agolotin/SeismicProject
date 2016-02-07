@@ -46,9 +46,10 @@ public class ConsumerKafka implements Runnable {
         
 			while (true) {
 				ConsumerRecords<String, TimeseriesCustom> records = consumer.poll(Long.MAX_VALUE);
-				//ConsumerRecords<String, String> records = consumer.poll(Long.MAX_VALUE);
 				for (ConsumerRecord record : records) {
 					TimeseriesCustom timeseries = (TimeseriesCustom) record.value();
+					// This is what has to be integrated with Ignite....
+					
 					System.out.println("offset = " + record.offset());
 					System.out.println(timeseries.toString());
 					System.out.println("Size of segments: " + timeseries.getSegments().size());

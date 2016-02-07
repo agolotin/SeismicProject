@@ -11,9 +11,9 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>1.7</maven.compiler.source>
-        <maven.compiler.target>1.7</maven.compiler.target>
-		<ignite.version>1.5.0.final</ignite.version>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <ignite.version>1.5.0.final</ignite.version>
     </properties>
 
     <build>
@@ -44,18 +44,18 @@
                         </configuration>
                     </execution>
                 </executions>
-			</plugin>            
+            </plugin>            
 
         </plugins>      
     </build>
 
-	<repositories>
-		<repository>
-			<id>project.local</id>
-			<name>project</name>
-			<url>file://${project.basedir}/libraries</url>
-		</repository>
-	</repositories>
+    <repositories>
+        <repository>
+            <id>project.local</id>
+            <name>project</name>
+            <url>file://${project.basedir}/libraries</url>
+        </repository>
+    </repositories>
 
     <dependencies>
         <!-- A lot of dependencies are listed as "provided" which means you must 
@@ -74,9 +74,14 @@
         <dependency>
             <groupId>edu.iris</groupId>
             <artifactId>IRIS-WS</artifactId>
-			<version>2.0.15</version>
-		</dependency>
+            <version>2.0.15</version>
+        </dependency>
 
+		<dependency>
+			<groupId>net.spy</groupId>
+			<artifactId>spymemcached</artifactId>
+			<version>2.12.0</version>
+		</dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>

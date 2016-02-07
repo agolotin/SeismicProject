@@ -72,7 +72,6 @@ public class ProducerKafka {
 			ProducerRecord<String, TimeseriesCustom> data = new ProducerRecord<String, TimeseriesCustom>("test", ts);
 			this.producer.send(data);
         }
-        //this.producer.send(new ProducerRecord<>("test", "key", "message"));
         this.producer.close();
     }
 
