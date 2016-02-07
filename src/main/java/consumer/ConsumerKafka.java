@@ -1,18 +1,20 @@
 package main.java.consumer;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.Properties;
 
 import main.java.timeseries.TimeseriesCustom;
+import main.java.timeseries.SegmentCustom;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.common.errors.WakeupException;
 
-import edu.iris.dmc.timeseries.model.Timeseries;
+import main.java.streaming.ignite.server.IgniteCacheConfig;
 
+import org.apache.ignite.*;
+
+@SuppressWarnings({"unchecked", "rawtypes"})
 public class ConsumerKafka implements Runnable {
 
 	private KafkaConsumer consumer;
@@ -39,26 +41,59 @@ public class ConsumerKafka implements Runnable {
 	@Override
     public void run() {
         // log4j writes to stdout for now
-        org.apache.log4j.BasicConfigurator.configure();
+        // org.apache.log4j.BasicConfigurator.configure();
+		Ignition.setClientMode(true);
 
         try {
         	consumer.subscribe(Arrays.asList(topic));
-        
+
+        	Ignite ignite = Ignition.start();
+			IgniteCache<Integer, Integer> streamCache = ignite.getOrCreateCache(IgniteCacheConfig.timeseriesCache());
+			IgniteDataStreamer<Integer, Integer> stmr = ignite.dataStreamer(streamCache.getName());
+				
+			float sampleRate = 20;
+			Integer secPerWindow = 5;
+
+			Integer windowNum, i;
+			
 			while (true) {
+
+				// Later, before reseting the windowNum 
+				// we'll have to query cache to see that that window has 
+				// already been processed to avoid race conditions
+				
+				// Also, since we are writing to a single cache, we'll have to make sure
+				// that multiple producers are not overriding data for a window
+				
+				// Maybe make the key of the cache a map....
+
+				windowNum = 0;
+				i = 0;
+				 
 				ConsumerRecords<String, TimeseriesCustom> records = consumer.poll(Long.MAX_VALUE);
 				for (ConsumerRecord record : records) {
-					TimeseriesCustom timeseries = (TimeseriesCustom) record.value();
-					// This is what has to be integrated with Ignite....
+					TimeseriesCustom data = (TimeseriesCustom) record.value();
 					
-					System.out.println("offset = " + record.offset());
-					System.out.println(timeseries.toString());
-					System.out.println("Size of segments: " + timeseries.getSegments().size());
-					System.out.println("Size of intData in segments: " + timeseries.getSegments().iterator().next().getIntegerData().size());
+					for (SegmentCustom segment : data.getSegments()) {
+						// Overwrite the sample rate to be sure
+						sampleRate = segment.getSampleRate();
+
+						for (Integer measurement : segment.getIntegerData()) {
+							if (i++ % (sampleRate * secPerWindow) == 0) {
+								windowNum++;
+							}
+							
+							System.out.printf("window number = %d, data point = %d", windowNum, measurement);
+							System.out.println();
+
+							stmr.addData(windowNum, measurement);
+						}
+					}
 				}
 			}
         }
-        catch(WakeupException e) {
-        	// ignore
+        catch(Exception e) {
+        	e.printStackTrace();
         }
         finally {
         	consumer.close();

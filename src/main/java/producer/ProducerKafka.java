@@ -63,6 +63,7 @@ public class ProducerKafka {
 
         List<Timeseries> timeSeriesCollection = this.getIrisMessage();
         
+        // There are 20 entries per second of IRIS data
         for (Timeseries timeseries : timeSeriesCollection) {
         	TimeseriesCustom ts = new TimeseriesCustom(timeseries.getNetworkCode(), timeseries.getStationCode(), timeseries.getLocation(), timeseries.getChannelCode());
         	ts.setSegments(timeseries.getSegments());
@@ -86,7 +87,7 @@ public class ProducerKafka {
 		Date endDate = null;
 		try {
 			startDate = dfm.parse("2005-02-17T00:00:00");
-			endDate = dfm.parse("2005-02-17T00:00:02");
+			endDate = dfm.parse("2005-02-17T00:00:10");
 		} catch (ParseException e) {
 			e.printStackTrace();
 		}

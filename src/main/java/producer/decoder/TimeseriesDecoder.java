@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.zip.InflaterInputStream;
 
 import main.java.timeseries.TimeseriesCustom;
-import main.java.timeseries.TimeseriesCustom.SegmentCustom;
+import main.java.timeseries.SegmentCustom;
 
 import org.apache.kafka.common.serialization.Deserializer;
 
