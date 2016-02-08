@@ -1,4 +1,4 @@
-package main.java.producer.decoder;
+package main.java.serialization;
 
 import java.io.ByteArrayInputStream;
 import java.util.Collection;

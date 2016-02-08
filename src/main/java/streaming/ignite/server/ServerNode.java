@@ -1,5 +1,6 @@
 package main.java.streaming.ignite.server;
 
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 

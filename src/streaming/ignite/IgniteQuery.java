@@ -1,6 +1,7 @@
 package streaming.ignite;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import main.java.streaming.ignite.server.IgniteCacheConfig;
@@ -22,7 +23,8 @@ public class IgniteQuery
 
 		try (Ignite ignite = Ignition.start()) 
 		{
-			IgniteCache<Integer, Integer> stmCache = ignite.getOrCreateCache(IgniteCacheConfig.timeseriesCache());
+			IgniteCache<Map<Integer, Integer>, Integer> stmCache = 
+					ignite.getOrCreateCache(IgniteCacheConfig.timeseriesCache());
 
 			/*
 			try (QueryCursor cursor = stmCache.query(new ScanQuery((k, p) -> p == 1))) {

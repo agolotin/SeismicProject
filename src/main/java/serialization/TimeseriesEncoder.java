@@ -1,4 +1,4 @@
-package main.java.producer.encoder;
+package main.java.serialization;
 
 import java.io.ByteArrayOutputStream;
 import java.util.Collection;

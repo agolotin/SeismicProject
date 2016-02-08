@@ -44,8 +44,8 @@ public class ProducerKafka {
         props.put("batch.size", 16384);
         props.put("linger.ms", 1);
         props.put("buffer.memory", 33554432);
-        props.put("key.serializer", "main.java.producer.encoder.TimeseriesEncoder");
-        props.put("value.serializer", "main.java.producer.encoder.TimeseriesEncoder");
+        props.put("key.serializer", "main.java.serialization.TimeseriesEncoder");
+        props.put("value.serializer", "main.java.serialization.TimeseriesEncoder");
 
         this.producer = new KafkaProducer<>(props);
     }

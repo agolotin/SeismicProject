@@ -1,6 +1,8 @@
 package main.java.consumer;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 import main.java.timeseries.TimeseriesCustom;
@@ -32,8 +34,8 @@ public class ConsumerKafka implements Runnable {
         props.put("enable.auto.commit", "true");
         props.put("auto.commit.interval.ms", "1000");
         props.put("session.timeout.ms", "30000");
-        props.put("key.deserializer", "main.java.producer.decoder.TimeseriesDecoder");
-        props.put("value.deserializer", "main.java.producer.decoder.TimeseriesDecoder");
+        props.put("key.deserializer", "main.java.serialization.TimeseriesDecoder");
+        props.put("value.deserializer", "main.java.serialization.TimeseriesDecoder");
         
         consumer = new KafkaConsumer<>(props);
     }
@@ -48,8 +50,11 @@ public class ConsumerKafka implements Runnable {
         	consumer.subscribe(Arrays.asList(topic));
 
         	Ignite ignite = Ignition.start();
-			IgniteCache<Integer, Integer> streamCache = ignite.getOrCreateCache(IgniteCacheConfig.timeseriesCache());
-			IgniteDataStreamer<Integer, Integer> stmr = ignite.dataStreamer(streamCache.getName());
+			IgniteCache<Map<Integer, Integer>, Integer> streamCache = 
+					ignite.getOrCreateCache(IgniteCacheConfig.timeseriesCache());
+
+			IgniteDataStreamer<Map<Integer, Integer>, Integer> stmr = 
+					ignite.dataStreamer(streamCache.getName());
 				
 			float sampleRate = 20;
 			Integer secPerWindow = 5;
@@ -62,11 +67,6 @@ public class ConsumerKafka implements Runnable {
 				// we'll have to query cache to see that that window has 
 				// already been processed to avoid race conditions
 				
-				// Also, since we are writing to a single cache, we'll have to make sure
-				// that multiple producers are not overriding data for a window
-				
-				// Maybe make the key of the cache a map....
-
 				windowNum = 0;
 				i = 0;
 				 
@@ -83,10 +83,10 @@ public class ConsumerKafka implements Runnable {
 								windowNum++;
 							}
 							
-							System.out.printf("window number = %d, data point = %d", windowNum, measurement);
-							System.out.println();
+							System.out.printf("tid = %d, window number = %d, data point = %d\n", 
+									tid, windowNum, measurement);
 
-							stmr.addData(windowNum, measurement);
+							stmr.addData(new HashMap<Integer, Integer>(tid, windowNum), measurement);
 						}
 					}
 				}
