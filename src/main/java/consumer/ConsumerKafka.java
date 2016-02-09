@@ -1,9 +1,15 @@
 package main.java.consumer;
 
+import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
+
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
 
 import main.java.timeseries.TimeseriesCustom;
 import main.java.timeseries.SegmentCustom;
@@ -13,15 +19,19 @@ import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 
 import main.java.streaming.ignite.server.IgniteCacheConfig;
+import main.java.streaming.ignite.server.MeasurementInfo;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.stream.StreamReceiver;
+import org.apache.ignite.stream.StreamTransformer;
 
 @SuppressWarnings({"unchecked", "rawtypes"})
-public class ConsumerKafka implements Runnable {
+public class ConsumerKafka implements Runnable, Serializable {
 
 	private KafkaConsumer consumer;
     private String topic;
-    private int tid;
+    private final int tid;
 
     public ConsumerKafka(int tid, String group_id, String topic) {
     	this.tid = tid;
@@ -50,26 +60,42 @@ public class ConsumerKafka implements Runnable {
         	consumer.subscribe(Arrays.asList(topic));
 
         	Ignite ignite = Ignition.start();
-			IgniteCache<Map<Integer, Integer>, Integer> streamCache = 
+			IgniteCache<Integer, MeasurementInfo> streamCache = 
 					ignite.getOrCreateCache(IgniteCacheConfig.timeseriesCache());
-
-			IgniteDataStreamer<Map<Integer, Integer>, Integer> stmr = 
+//					ignite.cache("seismic-data");
+			
+			IgniteDataStreamer<Integer, MeasurementInfo> stmr = 
 					ignite.dataStreamer(streamCache.getName());
-				
-			float sampleRate = 20;
+			
+			stmr.allowOverwrite(true);
+			
+			stmr.receiver(new StreamTransformer<Integer, MeasurementInfo>() {
+
+				@Override
+				public Object process(MutableEntry<Integer, MeasurementInfo> e, Object... arg)
+						throws EntryProcessorException {
+					
+					e.setValue((MeasurementInfo) arg[0]);
+					
+					return null;
+				}
+            });
+			
 			Integer secPerWindow = 5;
+			float sampleRate;
 
 			Integer windowNum, i;
 			
+			windowNum = 0;
 			while (true) {
 
 				// Later, before reseting the windowNum 
 				// we'll have to query cache to see that that window has 
 				// already been processed to avoid race conditions
 				
-				windowNum = 0;
+				sampleRate = 20;
 				i = 0;
-				 
+				
 				ConsumerRecords<String, TimeseriesCustom> records = consumer.poll(Long.MAX_VALUE);
 				for (ConsumerRecord record : records) {
 					TimeseriesCustom data = (TimeseriesCustom) record.value();
@@ -83,13 +109,11 @@ public class ConsumerKafka implements Runnable {
 								windowNum++;
 							}
 							
-							System.out.printf("tid = %d, window number = %d, data point = %d\n", 
-									tid, windowNum, measurement);
-
-							stmr.addData(new HashMap<Integer, Integer>(tid, windowNum), measurement);
+							stmr.addData(tid, new MeasurementInfo(tid, windowNum, measurement));
 						}
 					}
 				}
+				stmr.flush(); // Flush out all of the data that wasn't saved
 			}
         }
         catch(Exception e) {

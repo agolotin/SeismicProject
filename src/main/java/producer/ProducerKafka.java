@@ -87,7 +87,7 @@ public class ProducerKafka {
 		Date endDate = null;
 		try {
 			startDate = dfm.parse("2005-02-17T00:00:00");
-			endDate = dfm.parse("2005-02-17T00:00:10");
+			endDate = dfm.parse("2005-02-17T00:05:00");
 		} catch (ParseException e) {
 			e.printStackTrace();
 		}

@@ -6,6 +6,7 @@ import javax.cache.expiry.Duration;
 
 import main.java.timeseries.TimeseriesCustom;
 
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheTypeFieldMetadata;
 import org.apache.ignite.cache.CacheTypeMetadata;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -13,6 +14,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.*;
@@ -21,11 +23,14 @@ public class IgniteCacheConfig
 {
 	// Key is the number of the window, and value is the measurement
 	@SuppressWarnings("deprecation")
-	public static CacheConfiguration<Map<Integer, Integer>, Integer> timeseriesCache() 
+	public static CacheConfiguration<Integer, MeasurementInfo> timeseriesCache() 
 	{
-		CacheConfiguration<Map<Integer, Integer>, Integer> config = new CacheConfiguration<Map<Integer, Integer>, Integer>("seismic-data");
+		CacheConfiguration<Integer, MeasurementInfo> config = new CacheConfiguration<Integer, MeasurementInfo>("seismic-data");
+		
+		config.setCacheMode(CacheMode.PARTITIONED);
 		// Index individual words.
-		config.setIndexedTypes(Map.class, Integer.class);
+		config.setIndexedTypes(
+				Integer.class, MeasurementInfo.class);
 //		config.setReadThrough(true);
 //		config.setWriteThrough(true);
 		/*
@@ -64,7 +69,7 @@ public class IgniteCacheConfig
         */
 	
 		// Sliding window of 5 seconds.
-		// config.setExpiryPolicyFactory(FactoryBuilder.factoryOf(new CreatedExpiryPolicy(new Duration(TimeUnit.SECONDS, 1))));
+		config.setExpiryPolicyFactory(FactoryBuilder.factoryOf(new CreatedExpiryPolicy(new Duration(TimeUnit.SECONDS, 5))));
 		return config;
 	}
 }

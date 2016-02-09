@@ -31,13 +31,13 @@ public class IgniteStream
 	{
 		// Mark this cluster member as client.
 		Ignition.setClientMode(true);
-
+/*
 		try (Ignite ignite = Ignition.start()) 
 		{
-			IgniteCache<Integer, Integer> streamCache = ignite.getOrCreateCache(IgniteCacheConfig.timeseriesCache());
+			IgniteCache<Map<Integer, Integer>, Integer> streamCache = ignite.getOrCreateCache(IgniteCacheConfig.timeseriesCache());
 
 			// Create a streamer to stream words into the cache.
-			try (IgniteDataStreamer<Integer, Integer> stmr = ignite.dataStreamer(streamCache.getName())) 
+			try (IgniteDataStreamer<Map<Integer, Integer>, Integer> stmr = ignite.dataStreamer(streamCache.getName())) 
 			{
 				/*
 				// Allow data updates.
@@ -51,7 +51,6 @@ public class IgniteStream
 
 					return null;
 				}));
-				*/
 
 				Integer secPerWindow = 5;
 				Integer windowNum = 0;
@@ -65,7 +64,7 @@ public class IgniteStream
 							windowNum++;
 						}
 						
-						stmr.addData(windowNum, measurement);
+						//stmr.addData(windowNum, measurement);
 					}
 				}
 			} 
@@ -74,6 +73,7 @@ public class IgniteStream
 				ex.printStackTrace();
 			}
 		}
+				*/
 	}
 	
 	
