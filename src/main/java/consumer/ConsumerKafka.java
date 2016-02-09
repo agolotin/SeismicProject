@@ -94,7 +94,11 @@ public class ConsumerKafka implements Runnable, Serializable {
 				
 				ConsumerRecords<String, TimeseriesCustom> records = consumer.poll(Long.MAX_VALUE);
 				for (ConsumerRecord record : records) {
+					String topic = record.topic();
 					TimeseriesCustom data = (TimeseriesCustom) record.value();
+					
+					System.out.println("Record key: " + record.key());
+					System.out.println("Record topic: " + record.topic());
 					
 					for (SegmentCustom segment : data.getSegments()) {
 						// Overwrite the sample rate to be sure
@@ -110,6 +114,8 @@ public class ConsumerKafka implements Runnable, Serializable {
 					}
 				}
 				stmr.flush(); // Flush out all of the data to the cache
+				Runtime run = Runtime.getRuntime();
+				System.out.println("Memory used: " + (run.totalMemory() - run.freeMemory()));
 			}
         }
         catch(Exception e) {
