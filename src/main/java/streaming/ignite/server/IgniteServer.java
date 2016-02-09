@@ -4,7 +4,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 
-public class ServerNode 
+public class IgniteServer 
 {
 	public static void main(String[] args) 
 	{

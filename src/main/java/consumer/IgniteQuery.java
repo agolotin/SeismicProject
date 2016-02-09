@@ -30,7 +30,6 @@ public class IgniteQuery
 		{
 			IgniteCache<Integer, MeasurementInfo> stmCache = ignite.getOrCreateCache(IgniteCacheConfig.timeseriesCache());
 
-
 			/*
 			int i = 1;
 			while (true) {
@@ -43,33 +42,24 @@ public class IgniteQuery
 				Thread.sleep(5000);
 			}
 			*/
-			/*
-			try (QueryCursor cursor = stmCache.query(new 
-						ScanQuery<Integer, MeasurementInfo>((k, p) -> p.getWindowNum() == 1))) {
-				while (cursor.iterator().hasNext()) {
-					System.out.println(cursor.iterator().next());
-				}
-			}
-			*/
-			
 			
 			// Select all of the entries for a single window depending on the window number
-			SqlFieldsQuery top10Qry = new SqlFieldsQuery(
-					"select _key, _val from measurementinfo where measurementinfo.windownum = ?");
+			SqlFieldsQuery qry = new SqlFieldsQuery(
+					"select _key, _val from measurementinfo where "
+					+ "measurementinfo.windownum = ? and measurementinfo.tid = 0");
 
 			int i = 1;
 			while (true) 
 			{
-				//scanQuery(ignite, stmCache);
 				// Execute queries.
-				List<List<?>> top10 = stmCache.query(top10Qry.setArgs(i)).getAll();
+				List<List<?>> result = stmCache.query(qry.setArgs(i)).getAll();
 
-				System.out.println(top10.toString());
+				System.out.println(result.toString());
 				System.out.println(stmCache.size(CachePeekMode.ALL));
 				
-				if (!top10.isEmpty()) {
+				if (!result.isEmpty()) {
 					Set<Integer> toDelete = new HashSet<Integer>();
-					for (List<?> l : top10) {
+					for (List<?> l : result) {
 						toDelete.add((Integer) l.get(0));
 					}
 					stmCache.removeAll(toDelete);
@@ -81,23 +71,6 @@ public class IgniteQuery
 		}
 	}
 	
-    @SuppressWarnings({"serial", "unchecked"})
-    private static void scanQuery(Ignite ignite, IgniteCache<Integer, MeasurementInfo> stmCache) {
-        IgniteCache<BinaryObject, BinaryObject> cache = ignite.cache(stmCache.getName()).withKeepBinary();
-
-		ScanQuery<BinaryObject, BinaryObject> scan = new ScanQuery(
-            new IgniteBiPredicate<BinaryObject, BinaryObject>() {
-                @Override 
-                public boolean apply(BinaryObject key, BinaryObject person) {
-                    return person.<Integer>field("windowNum") == 1;
-                }
-            }
-        );
-
-        // Execute queries for salary ranges.
-        //print("People with salaries between 0 and 1000 (queried with SCAN query): ", cache.query(scan).getAll());
-        System.out.println(cache.query(scan).getAll());
-    }
 }
 
 

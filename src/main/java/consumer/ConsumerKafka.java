@@ -62,7 +62,6 @@ public class ConsumerKafka implements Runnable, Serializable {
         	Ignite ignite = Ignition.start();
 			IgniteCache<Integer, MeasurementInfo> streamCache = 
 					ignite.getOrCreateCache(IgniteCacheConfig.timeseriesCache());
-//					ignite.cache("seismic-data");
 			
 			IgniteDataStreamer<Integer, MeasurementInfo> stmr = 
 					ignite.dataStreamer(streamCache.getName());
@@ -82,11 +81,9 @@ public class ConsumerKafka implements Runnable, Serializable {
             });
 			
 			Integer secPerWindow = 5;
-			float sampleRate;
+			float sampleRate = 20;
 
-			Integer windowNum, i;
-			
-			windowNum = 0;
+			Integer windowNum = 0, i = 0; 
 			while (true) {
 
 				// Later, before reseting the windowNum 
@@ -94,7 +91,6 @@ public class ConsumerKafka implements Runnable, Serializable {
 				// already been processed to avoid race conditions
 				
 				sampleRate = 20;
-				i = 0;
 				
 				ConsumerRecords<String, TimeseriesCustom> records = consumer.poll(Long.MAX_VALUE);
 				for (ConsumerRecord record : records) {
@@ -113,7 +109,7 @@ public class ConsumerKafka implements Runnable, Serializable {
 						}
 					}
 				}
-				stmr.flush(); // Flush out all of the data that wasn't saved
+				stmr.flush(); // Flush out all of the data to the cache
 			}
         }
         catch(Exception e) {
