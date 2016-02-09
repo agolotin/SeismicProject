@@ -1,5 +1,10 @@
 package main.java.consumer;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.Set;
+
 import main.java.streaming.ignite.server.IgniteCacheConfig;
 import main.java.streaming.ignite.server.MeasurementInfo;
 
@@ -26,18 +31,19 @@ public class IgniteQuery
 			IgniteCache<Integer, MeasurementInfo> stmCache = ignite.getOrCreateCache(IgniteCacheConfig.timeseriesCache());
 
 
+			/*
+			int i = 1;
 			while (true) {
-				System.out.println(stmCache.size(CachePeekMode.ALL));
+				SqlQuery qry = new SqlQuery(MeasurementInfo.class, "windowNum == ?");
+				List<List<?>> cursor = stmCache.query(qry.setArgs(i)).getAll();
+				System.out.println(cursor.toString());
+				if (cursor.isEmpty())
+					i++;
+				
 				Thread.sleep(5000);
 			}
-			//scanQuery(ignite, stmCache);
+			*/
 			/*
-			
-			SqlQuery qry = new SqlQuery(MeasurementInfo.class, "windowNum = 1");
-			try (QueryCursor<Entry<Long, MeasurementInfo>> cursor = stmCache.query(qry)) {
-				  for (Entry<Long, MeasurementInfo> e : cursor)
-				    System.out.println(e.getValue().toString());
-				}
 			try (QueryCursor cursor = stmCache.query(new 
 						ScanQuery<Integer, MeasurementInfo>((k, p) -> p.getWindowNum() == 1))) {
 				while (cursor.iterator().hasNext()) {
@@ -45,21 +51,33 @@ public class IgniteQuery
 				}
 			}
 			*/
-			// Select top 10 words.
-			/*
-			SqlFieldsQuery top10Qry = new SqlFieldsQuery("SELECT * FROM \"seismic-data\".MeasurementInfo WHERE windowNum == 1 LIMIT 10");
+			
+			
+			// Select all of the entries for a single window depending on the window number
+			SqlFieldsQuery top10Qry = new SqlFieldsQuery(
+					"select _key, _val from measurementinfo where measurementinfo.windownum = ?");
 
-			// Query top 10 popular words every 5 seconds.
+			int i = 1;
 			while (true) 
 			{
+				//scanQuery(ignite, stmCache);
 				// Execute queries.
-				List<List<?>> top10 = stmCache.query(top10Qry).getAll();
+				List<List<?>> top10 = stmCache.query(top10Qry.setArgs(i)).getAll();
 
 				System.out.println(top10.toString());
-
-				Thread.sleep(5000);
+				System.out.println(stmCache.size(CachePeekMode.ALL));
+				
+				if (!top10.isEmpty()) {
+					Set<Integer> toDelete = new HashSet<Integer>();
+					for (List<?> l : top10) {
+						toDelete.add((Integer) l.get(0));
+					}
+					stmCache.removeAll(toDelete);
+					i++;
+				}
+				
+				Thread.sleep(1000);
 			}
-			*/
 		}
 	}
 	
@@ -71,9 +89,7 @@ public class IgniteQuery
             new IgniteBiPredicate<BinaryObject, BinaryObject>() {
                 @Override 
                 public boolean apply(BinaryObject key, BinaryObject person) {
-                	System.out.println(key.getClass());
-                	System.out.println(person.getClass());
-                    return false;//person.<Integer>field("windowNum") == 1;
+                    return person.<Integer>field("windowNum") == 1;
                 }
             }
         );

@@ -109,7 +109,7 @@ public class ConsumerKafka implements Runnable, Serializable {
 								windowNum++;
 							}
 							
-							stmr.addData(tid, new MeasurementInfo(tid, windowNum, measurement));
+							stmr.addData(i, new MeasurementInfo(tid, windowNum, measurement));
 						}
 					}
 				}

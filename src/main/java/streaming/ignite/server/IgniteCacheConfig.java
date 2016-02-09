@@ -1,5 +1,6 @@
 package main.java.streaming.ignite.server;
 
+import javax.cache.configuration.Factory;
 import javax.cache.configuration.FactoryBuilder;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
@@ -10,6 +11,8 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheTypeFieldMetadata;
 import org.apache.ignite.cache.CacheTypeMetadata;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.*;
 
 import java.sql.Types;
 import java.util.ArrayList;
@@ -26,13 +29,10 @@ public class IgniteCacheConfig
 	public static CacheConfiguration<Integer, MeasurementInfo> timeseriesCache() 
 	{
 		CacheConfiguration<Integer, MeasurementInfo> config = new CacheConfiguration<Integer, MeasurementInfo>("seismic-data");
-		
-		config.setCacheMode(CacheMode.PARTITIONED);
-		// Index individual words.
-		config.setIndexedTypes(
-				Integer.class, MeasurementInfo.class);
-//		config.setReadThrough(true);
-//		config.setWriteThrough(true);
+		// Index individual measurements
+		config.setIndexedTypes(Integer.class, MeasurementInfo.class);
+		// Set the amount of time we want our entries to persist in cache
+		config.setExpiryPolicyFactory(FactoryBuilder.factoryOf(new CreatedExpiryPolicy(new Duration(TimeUnit.HOURS, 5))));
 		/*
 		// Configure cache types. 
         Collection<CacheTypeMetadata> meta = new ArrayList<>();
@@ -68,8 +68,6 @@ public class IgniteCacheConfig
         config.setTypeMetadata(meta);
         */
 	
-		// Sliding window of 5 seconds.
-		config.setExpiryPolicyFactory(FactoryBuilder.factoryOf(new CreatedExpiryPolicy(new Duration(TimeUnit.SECONDS, 5))));
 		return config;
 	}
 }
