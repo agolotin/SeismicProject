@@ -21,8 +21,12 @@ public class TimeseriesCustom extends java.lang.Object implements java.io.Serial
 		this.stationCode = stationCode;
 		this.location = location;
 		this.channelCode = channelCode;
+		
+		this.partitionNum = null;
 	}
 	
+	// This is a dirty hack in order to split a message between several consumers
+	private Integer partitionNum;
 	// ================================== ||
 	private String networkCode;
 	private String stationCode;
@@ -34,6 +38,10 @@ public class TimeseriesCustom extends java.lang.Object implements java.io.Serial
 	
 	private Collection<SegmentCustom> segments;
 	// ================================== ||
+	
+	public Integer getPartitionNum() {
+		return partitionNum;
+	}
 
 	public String getNetworkCode() {
 		return networkCode;
@@ -62,6 +70,10 @@ public class TimeseriesCustom extends java.lang.Object implements java.io.Serial
 	public Collection<SegmentCustom> getSegments() {
 		return segments;
 	}
+	
+	public void setPartitionNum(Integer partitionNum) {
+		this.partitionNum = partitionNum;
+	}
 
 	public void setNetworkCode(String networkCode) {
 		this.networkCode = networkCode;
@@ -87,13 +99,16 @@ public class TimeseriesCustom extends java.lang.Object implements java.io.Serial
 		this.dataQuality = dataQuality;
 	}
 
-	public void setSegments(Collection<Segment> segments) {
+	public void setSegments(Collection<Segment> segments, List<Integer> measurementsPerPartition) {
 		List<SegmentCustom> scCollection = new ArrayList<SegmentCustom>();
 		for (Segment s : segments) {
 			SegmentCustom sc = new SegmentCustom(s.getType(), s.getSamplerate());
 			sc.setDoubleData(s.getDoubleData());
 			sc.setFloatData(s.getFloatData());
-			sc.setIntegerData(s.getIntData());
+			sc.setSampleCount(s.getSampleCount());
+			sc.setType(s.getType());
+			sc.setShortData(s.getShortData());
+			sc.setIntegerData(measurementsPerPartition);
 			sc.setEndTime(s.getEndTime());
 			sc.setExpectedNextSampleTime(s.getExpectedNextSampleTime());
 			sc.setStartTime(s.getStartTime());

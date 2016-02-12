@@ -9,10 +9,12 @@ import java.util.concurrent.TimeUnit;
 public class ConsumerRun {
 	
 	public static void main(String[] args) { 
-		  int numConsumers = 1;
+		// In the args we will have to specify the number of consumers, group id, and a topic for a set of consumers
+		// Or we can do a set of topics and with a single command we will spin off all of the consumers that will listen on their specific topic and partition
+		  int numConsumers = 3;
 		  String groupId = "seismic-events";
 		  
-		  String topic = "test";
+		  String topic = "test2";
 		  final ExecutorService executor = Executors.newFixedThreadPool(numConsumers);
 
 		  final List<ConsumerKafka> consumers = new ArrayList<>();

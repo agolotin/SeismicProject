@@ -28,6 +28,8 @@ public class SegmentCustom extends java.lang.Object implements java.io.Serializa
 	private Timestamp startTime;
 	private Timestamp endTime;
 	private Timestamp expectedNextSampleTime;
+	private int sampleCount;
+	private List<Short> shortData;
 	// =========================== ||
 /*
 	@Override
@@ -135,6 +137,14 @@ public class SegmentCustom extends java.lang.Object implements java.io.Serializa
 	public Timestamp getExpectedNextSampleTime() {
 		return expectedNextSampleTime;
 	}
+	
+	public int getSampleCount() {
+		return sampleCount;
+	}
+	
+	public List<Short> getShortData() {
+		return shortData;
+	}
 
 	public void setType(Segment.Type type) {
 		this.type = type;
@@ -166,6 +176,14 @@ public class SegmentCustom extends java.lang.Object implements java.io.Serializa
 
 	public void setExpectedNextSampleTime(Timestamp expectedNextSampleTime) {
 		this.expectedNextSampleTime = expectedNextSampleTime;
+	}
+
+	public void setSampleCount(int sampleCount) {
+		this.sampleCount = sampleCount;
+	}
+
+	public void setShortData(List<Short> shortData) {
+		this.shortData = shortData;
 	}
 	
 }

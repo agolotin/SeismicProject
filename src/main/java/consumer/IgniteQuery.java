@@ -28,20 +28,7 @@ public class IgniteQuery
 
 		try (Ignite ignite = Ignition.start()) 
 		{
-			IgniteCache<Integer, MeasurementInfo> stmCache = ignite.getOrCreateCache(IgniteCacheConfig.timeseriesCache());
-
-			/*
-			int i = 1;
-			while (true) {
-				SqlQuery qry = new SqlQuery(MeasurementInfo.class, "windowNum == ?");
-				List<List<?>> cursor = stmCache.query(qry.setArgs(i)).getAll();
-				System.out.println(cursor.toString());
-				if (cursor.isEmpty())
-					i++;
-				
-				Thread.sleep(5000);
-			}
-			*/
+			IgniteCache<String, MeasurementInfo> stmCache = ignite.getOrCreateCache(IgniteCacheConfig.timeseriesCache());
 			
 			// Select all of the entries for a single window depending on the window number
 			SqlFieldsQuery qry = new SqlFieldsQuery(
@@ -58,9 +45,9 @@ public class IgniteQuery
 				System.out.println(stmCache.size(CachePeekMode.ALL));
 				
 				if (!result.isEmpty()) {
-					Set<Integer> toDelete = new HashSet<Integer>();
+					Set<String> toDelete = new HashSet<String>();
 					for (List<?> l : result) {
-						toDelete.add((Integer) l.get(0));
+						toDelete.add((String) l.get(0));
 					}
 					stmCache.removeAll(toDelete);
 					i++;

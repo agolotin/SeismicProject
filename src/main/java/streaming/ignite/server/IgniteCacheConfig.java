@@ -26,9 +26,9 @@ public class IgniteCacheConfig
 {
 	// Key is the number of the window, and value is the measurement
 	@SuppressWarnings("deprecation")
-	public static CacheConfiguration<Integer, MeasurementInfo> timeseriesCache() 
+	public static CacheConfiguration<String, MeasurementInfo> timeseriesCache() 
 	{
-		CacheConfiguration<Integer, MeasurementInfo> config = new CacheConfiguration<Integer, MeasurementInfo>("seismic-data");
+		CacheConfiguration<String, MeasurementInfo> config = new CacheConfiguration<String, MeasurementInfo>("seismic-data");
 		// Index individual measurements
 		config.setIndexedTypes(Integer.class, MeasurementInfo.class);
 		// Set the amount of time we want our entries to persist in cache

@@ -15,14 +15,20 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 
 import edu.iris.dmc.criteria.*;  
 import edu.iris.dmc.service.*;
+import edu.iris.dmc.timeseries.model.Segment;
 import edu.iris.dmc.timeseries.model.Timeseries;
 
 public class ProducerKafka {
 
     private KafkaProducer producer;
-	List<String> stationList = new ArrayList<String>();
+	List<String> stationList;
 
-    public ProducerKafka() {}
+    public ProducerKafka() {
+    	// the constructor will take a list of stations, which will be topic later on
+    	stationList = new ArrayList<String>();
+    	
+		stationList.add("IU-KBS-00-BHZ");
+    }
     
     public static void main(String[] args) {
 
@@ -61,20 +67,56 @@ public class ProducerKafka {
             e.printStackTrace();
         }
 
+        final String topic = "test2";
+        
         List<Timeseries> timeSeriesCollection = this.getIrisMessage();
         
         // There are 20 entries per second of IRIS data
         for (Timeseries timeseries : timeSeriesCollection) {
-        	TimeseriesCustom ts = new TimeseriesCustom(timeseries.getNetworkCode(), timeseries.getStationCode(), timeseries.getLocation(), timeseries.getChannelCode());
-        	ts.setSegments(timeseries.getSegments());
-        	ts.setChannel(timeseries.getChannel());
-        	ts.setDataQuality(timeseries.getDataQuality());
+        	// Split the message into several so the whole chunk of data will go to different partitions
+        	List<TimeseriesCustom> ts_list = this.getCustomTimeseriesPatition(
+        			timeseries, this.producer.partitionsFor(topic).size());
         	
-			ProducerRecord<String, TimeseriesCustom> data = new ProducerRecord<String, TimeseriesCustom>("test", ts);
-			this.producer.send(data);
+        	for (TimeseriesCustom ts : ts_list) {
+				ProducerRecord<String, TimeseriesCustom> data = new ProducerRecord<String, TimeseriesCustom>(topic, ts);
+				this.producer.send(data);
+        	}
         }
         this.producer.close();
     }
+
+	private List<TimeseriesCustom> getCustomTimeseriesPatition(Timeseries timeseries, int numPartitions) {
+		List<TimeseriesCustom> _tsList = new ArrayList<TimeseriesCustom>();
+		
+		Collection<Segment> allSegments = timeseries.getSegments();
+		Segment segment = allSegments.iterator().next();
+		// implement a check to see that there's only int data....
+		List<Integer> measurements = segment.getIntData();
+		
+		// how much data to send to a single partitioner
+		Double seconds = Double.valueOf(segment.getSampleCount()) / segment.getSamplerate();
+		Double secondsPerPartition = seconds / Double.valueOf(numPartitions);
+	
+		for (int i = 0; i < numPartitions; i++) {
+			TimeseriesCustom ts = new TimeseriesCustom(timeseries.getNetworkCode(), timeseries.getStationCode(), 
+					timeseries.getLocation(), timeseries.getChannelCode());
+			ts.setChannel(timeseries.getChannel());
+			ts.setDataQuality(timeseries.getDataQuality());
+			
+			List<Integer> measurementsPerPartition = new ArrayList<Integer>();
+			for (int k = (int) (secondsPerPartition * i * segment.getSampleCount()); 
+					k < secondsPerPartition * segment.getSampleCount() * (i + 1); k++) {
+				
+				measurementsPerPartition.add(measurements.get(k));
+			}
+			
+			ts.setSegments(allSegments, measurementsPerPartition);
+			
+			_tsList.add(ts);
+		}
+        
+		return _tsList;
+	}
 
 	private List<Timeseries> getIrisMessage() throws IOException {
 		ServiceUtil serviceUtil = ServiceUtil.getInstance();
@@ -87,13 +129,12 @@ public class ProducerKafka {
 		Date endDate = null;
 		try {
 			startDate = dfm.parse("2005-02-17T00:00:00");
-			endDate = dfm.parse("2005-02-17T00:05:00");
+			endDate = dfm.parse("2005-03-17T00:10:00");
 		} catch (ParseException e) {
 			e.printStackTrace();
 		}
 		WaveformCriteria criteria = new WaveformCriteria();
 
-		stationList.add("IU-KBS-00-BHZ");
 		for (String info : stationList) {
 			String[] s_info = info.split("-");
 
