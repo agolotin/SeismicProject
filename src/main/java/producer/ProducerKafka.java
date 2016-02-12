@@ -9,6 +9,7 @@ import main.java.timeseries.TimeseriesCustom;
 
 import java.text.*;
 import java.util.*;
+import java.util.stream.Stream;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -50,6 +51,7 @@ public class ProducerKafka {
         props.put("batch.size", 16384);
         props.put("linger.ms", 1);
         props.put("buffer.memory", 33554432);
+        props.put("paritioner.class", "main.java.producer.KafkaPartitioner");
         props.put("key.serializer", "main.java.serialization.TimeseriesEncoder");
         props.put("value.serializer", "main.java.serialization.TimeseriesEncoder");
 
@@ -91,7 +93,8 @@ public class ProducerKafka {
 		Collection<Segment> allSegments = timeseries.getSegments();
 		Segment segment = allSegments.iterator().next();
 		// implement a check to see that there's only int data....
-		List<Integer> measurements = segment.getIntData();
+		//List<Integer> measurements = segment.getIntData();
+		List<Integer> data = segment.getIntData();
 		
 		// how much data to send to a single partitioner
 		Double seconds = Double.valueOf(segment.getSampleCount()) / segment.getSamplerate();
@@ -104,12 +107,14 @@ public class ProducerKafka {
 			ts.setDataQuality(timeseries.getDataQuality());
 			
 			List<Integer> measurementsPerPartition = new ArrayList<Integer>();
-			for (int k = (int) (secondsPerPartition * i * segment.getSampleCount()); 
-					k < secondsPerPartition * segment.getSampleCount() * (i + 1); k++) {
+			for (int k = (int) (secondsPerPartition * i * segment.getSamplerate()); 
+					k < secondsPerPartition * segment.getSamplerate() * (i + 1); k++) {
 				
-				measurementsPerPartition.add(measurements.get(k));
+				measurementsPerPartition.add(data.get(k));
 			}
 			
+			// Specify which partition the message is going to go to
+			ts.setPartitionNum(i);
 			ts.setSegments(allSegments, measurementsPerPartition);
 			
 			_tsList.add(ts);
@@ -129,7 +134,7 @@ public class ProducerKafka {
 		Date endDate = null;
 		try {
 			startDate = dfm.parse("2005-02-17T00:00:00");
-			endDate = dfm.parse("2005-03-17T00:10:00");
+			endDate = dfm.parse("2005-02-17T00:10:00");
 		} catch (ParseException e) {
 			e.printStackTrace();
 		}

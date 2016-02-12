@@ -28,7 +28,7 @@ public class TimeseriesEncoder implements Serializer<TimeseriesCustom> {
 		kryo.register(Collection.class, new JavaSerializer());
 		
 
-		ByteArrayOutputStream out = new ByteArrayOutputStream(Integer.MAX_VALUE);
+		ByteArrayOutputStream out = new ByteArrayOutputStream(16384);
 		DeflaterOutputStream deflaterOutputStream = new DeflaterOutputStream(out);
 		
 		Output output = new Output(deflaterOutputStream);

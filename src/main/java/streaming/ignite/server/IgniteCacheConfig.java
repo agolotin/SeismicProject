@@ -30,11 +30,13 @@ public class IgniteCacheConfig
 	{
 		CacheConfiguration<String, MeasurementInfo> config = new CacheConfiguration<String, MeasurementInfo>("seismic-data");
 		// Index individual measurements
-		config.setIndexedTypes(Integer.class, MeasurementInfo.class);
+		config.setIndexedTypes(String.class, MeasurementInfo.class);
 		// Set the amount of time we want our entries to persist in cache
 		config.setExpiryPolicyFactory(FactoryBuilder.factoryOf(new CreatedExpiryPolicy(new Duration(TimeUnit.HOURS, 5))));
 		// Make sure the cache is partitioned over multiple nodes
 		config.setCacheMode(CacheMode.PARTITIONED);
+		
+		config.setAtomicWriteOrderMode(CacheAtomicWriteOrderMode.PRIMARY);
 		/*
 		// Configure cache types. 
         Collection<CacheTypeMetadata> meta = new ArrayList<>();

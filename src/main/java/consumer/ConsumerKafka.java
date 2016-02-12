@@ -49,7 +49,6 @@ public class ConsumerKafka implements Runnable, Serializable {
         props.put("enable.auto.commit", "true");
         props.put("auto.commit.interval.ms", "1000");
         props.put("session.timeout.ms", "30000");
-        props.put("auto.offset.reset", "earliest"); // added this for topic partitioning
         props.put("key.deserializer", "main.java.serialization.TimeseriesDecoder");
         props.put("value.deserializer", "main.java.serialization.TimeseriesDecoder");
         
@@ -69,15 +68,15 @@ public class ConsumerKafka implements Runnable, Serializable {
         	//consumer.subscribe(Arrays.asList(topic));
         	consumer.assign(Arrays.asList(par));
         	
-        	IgniteConfiguration conf = new org.apache.ignite.configuration.IgniteConfiguration();
+        	IgniteConfiguration conf = new IgniteConfiguration();
         	conf.setGridName(String.valueOf("Grid" + tid));
         	
         	// This configuration lets multiple clients to start on the same machine
-//        	TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
-//        	commSpi.setLocalAddress("localhost");
-//        	commSpi.setLocalPortRange(100);
-//        	
-//        	conf.setCommunicationSpi(commSpi);
+        	//TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
+        	//commSpi.setLocalAddress("localhost");
+        	//commSpi.setLocalPortRange(100);
+        	
+        	//conf.setCommunicationSpi(commSpi);
         	// ================================= ||
         	conf.setClientMode(true);
 
@@ -114,7 +113,6 @@ public class ConsumerKafka implements Runnable, Serializable {
 				for (ConsumerRecord record : records) {
 					TimeseriesCustom data = (TimeseriesCustom) record.value();
 					
-					System.out.println("Record key: " + record.key());
 					System.out.println("Record topic: " + record.topic());
 					System.out.printf("Partitoin number = %d, tid = %d\n", record.partition(), tid);
 					
@@ -127,12 +125,13 @@ public class ConsumerKafka implements Runnable, Serializable {
 								windowNum++;
 							}
 							
-							//stmr.addData(String.valueOf(tid + "_" + i), 
-							//		new MeasurementInfo(tid, windowNum, measurement));
+							
+							stmr.addData(String.valueOf(tid + "_" + i), 
+									new MeasurementInfo(tid, windowNum, measurement));
 						}
 					}
 				}
-				//stmr.flush(); // Flush out all of the data to the cache
+				stmr.flush(); // Flush out all of the data to the cache
 				//Runtime run = Runtime.getRuntime();
 				//System.out.println("Memory used: " + (run.totalMemory() - run.freeMemory()));
 			}
