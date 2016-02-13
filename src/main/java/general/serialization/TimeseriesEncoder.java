@@ -1,12 +1,12 @@
-package main.java.serialization;
+package main.java.general.serialization;
 
 import java.io.ByteArrayOutputStream;
 import java.util.Collection;
 import java.util.Map;
 import java.util.zip.DeflaterOutputStream;
 
-import main.java.timeseries.TimeseriesCustom;
-import main.java.timeseries.SegmentCustom;
+import main.java.general.timeseries.SegmentCustom;
+import main.java.general.timeseries.TimeseriesCustom;
 
 import org.apache.kafka.common.serialization.Serializer;
 
@@ -25,7 +25,6 @@ public class TimeseriesEncoder implements Serializer<TimeseriesCustom> {
 		Kryo kryo = new Kryo();
 		kryo.register(TimeseriesCustom.class, new JavaSerializer());
 		kryo.register(SegmentCustom.class, new JavaSerializer());
-		kryo.register(Collection.class, new JavaSerializer());
 		
 
 		ByteArrayOutputStream out = new ByteArrayOutputStream(16384);

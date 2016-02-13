@@ -5,7 +5,7 @@ import javax.cache.configuration.FactoryBuilder;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 
-import main.java.timeseries.TimeseriesCustom;
+import main.java.general.timeseries.TimeseriesCustom;
 
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheTypeFieldMetadata;

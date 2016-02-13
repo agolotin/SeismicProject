@@ -11,11 +11,11 @@ public class MeasurementInfo implements java.io.Serializable {
 	private Integer windowNum;
 	
 	@QuerySqlField
-	private Integer measurement;
+	private Object measurement;
 	
 	public MeasurementInfo() { }
 	
-	public MeasurementInfo(int tid, Integer windowNum, Integer measurement) {
+	public MeasurementInfo(int tid, Integer windowNum, Object measurement) {
 		this.tid = tid;
 		this.windowNum = windowNum;
 		this.measurement = measurement;
@@ -29,7 +29,7 @@ public class MeasurementInfo implements java.io.Serializable {
 		return windowNum;
 	}
 
-	public Integer getMeasurement() {
+	public Object getMeasurement() {
 		return measurement;
 	}
 

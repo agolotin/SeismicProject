@@ -1,5 +1,6 @@
 package main.java.consumer;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
@@ -29,17 +30,18 @@ public class IgniteQuery
 		try (Ignite ignite = Ignition.start()) 
 		{
 			IgniteCache<String, MeasurementInfo> stmCache = ignite.getOrCreateCache(IgniteCacheConfig.timeseriesCache());
+			stmCache.clear();
 			
 			// Select all of the entries for a single window depending on the window number
 			SqlFieldsQuery qry = new SqlFieldsQuery(
 					"select _key, _val from measurementinfo where "
-					+ "measurementinfo.windownum = ? and measurementinfo.tid = 0");
+					+ "measurementinfo.windownum = ? and measurementinfo.tid = ?");
 
 			int i = 1;
 			while (true) 
 			{
 				// Execute queries.
-				List<List<?>> result = stmCache.query(qry.setArgs(i)).getAll();
+				List<List<?>> result = stmCache.query(qry.setArgs(i, 1)).getAll();
 
 				System.out.println(result.toString());
 				System.out.println(stmCache.size(CachePeekMode.ALL));
@@ -53,7 +55,7 @@ public class IgniteQuery
 					i++;
 				}
 				
-				Thread.sleep(1000);
+				Thread.sleep(5000);
 			}
 		}
 	}

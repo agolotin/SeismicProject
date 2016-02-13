@@ -8,6 +8,7 @@ import java.util.concurrent.TimeUnit;
 
 public class ConsumerRun {
 	
+   	// TODO: Make the argument a file.input and have all of the input defined there
 	public static void main(String[] args) { 
 		// In the args we will have to specify the number of consumers, group id, and a topic for a set of consumers
 		// Or we can do a set of topics and with a single command we will spin off all of the consumers that will listen on their specific topic and partition

@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
@@ -11,30 +12,30 @@ import java.util.Properties;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 
-import main.java.timeseries.TimeseriesCustom;
-import main.java.timeseries.SegmentCustom;
-
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.TopicPartition;
 
+import main.java.general.timeseries.SegmentCustom;
+import main.java.general.timeseries.TimeseriesCustom;
 import main.java.streaming.ignite.server.IgniteCacheConfig;
 import main.java.streaming.ignite.server.MeasurementInfo;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.stream.StreamReceiver;
 import org.apache.ignite.stream.StreamTransformer;
 
-@SuppressWarnings({"unchecked", "rawtypes"})
+@SuppressWarnings({"unchecked", "rawtypes", "serial"})
 public class ConsumerKafka implements Runnable, Serializable {
 
-	private KafkaConsumer consumer;
+	private final KafkaConsumer consumer;
     private final String topic;
     private final int tid;
 
@@ -49,35 +50,37 @@ public class ConsumerKafka implements Runnable, Serializable {
         props.put("enable.auto.commit", "true");
         props.put("auto.commit.interval.ms", "1000");
         props.put("session.timeout.ms", "30000");
-        props.put("key.deserializer", "main.java.serialization.TimeseriesDecoder");
-        props.put("value.deserializer", "main.java.serialization.TimeseriesDecoder");
+        props.put("key.deserializer", "main.java.general.serialization.TimeseriesDecoder");
+        props.put("value.deserializer", "main.java.general.serialization.TimeseriesDecoder");
         
         consumer = new KafkaConsumer<>(props);
     }
     
+    // DOCME: Add documentation to this method, it's really long..
 	@Override
     public void run() {
         // log4j writes to stdout for now
         // org.apache.log4j.BasicConfigurator.configure();
-		// Ignition.setClientMode(true);
 
         try {
-        	// Listen on a specific topic partition
         	TopicPartition par = new TopicPartition(topic, tid);
         	
-        	//consumer.subscribe(Arrays.asList(topic));
+        	// Have consumer listen on a specific topic partition
         	consumer.assign(Arrays.asList(par));
+        	consumer.seekToEnd(par);
         	
         	IgniteConfiguration conf = new IgniteConfiguration();
+        	// Since multiple consumers will be running on a single node, 
+        	//	we need to specify different names for them
         	conf.setGridName(String.valueOf("Grid" + tid));
         	
-        	// This configuration lets multiple clients to start on the same machine
+        	// REVIEWME: Review what communication spi does...
         	//TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
         	//commSpi.setLocalAddress("localhost");
         	//commSpi.setLocalPortRange(100);
         	
         	//conf.setCommunicationSpi(commSpi);
-        	// ================================= ||
+        	
         	conf.setClientMode(true);
 
         	Ignite ignite = Ignition.start(conf);
@@ -87,6 +90,9 @@ public class ConsumerKafka implements Runnable, Serializable {
 			IgniteDataStreamer<String, MeasurementInfo> stmr = 
 					ignite.dataStreamer(streamCache.getName());
 			
+			// For some reason we have to overwrite the value of 
+			//	what's being put into cache...otherwise it doesn't work
+			// TESTME: Try get rid of these next 15 or so lines and test Ignite query
 			stmr.allowOverwrite(true);
 			
 			stmr.receiver(new StreamTransformer<String, MeasurementInfo>() {
@@ -101,37 +107,52 @@ public class ConsumerKafka implements Runnable, Serializable {
 				}
             });
 			
+			// TODO: This will have to be a command line parameter...probably
 			Integer secPerWindow = 5;
-			float sampleRate = 20;
+			float sampleRate = 20; // default sample rate
 
-			Integer windowNum = 0, i = 0; 
+			Integer windowNum, i = 0;  // i will always be unique
 			while (true) {
-
-				sampleRate = 20;
-				
 				ConsumerRecords<String, TimeseriesCustom> records = consumer.poll(Long.MAX_VALUE);
-				for (ConsumerRecord record : records) {
-					TimeseriesCustom data = (TimeseriesCustom) record.value();
-					
-					System.out.println("Record topic: " + record.topic());
-					System.out.printf("Partitoin number = %d, tid = %d\n", record.partition(), tid);
-					
-					for (SegmentCustom segment : data.getSegments()) {
-						// Overwrite the sample rate to be sure
-						sampleRate = segment.getSampleRate();
 
-						for (Integer measurement : segment.getIntegerData()) {
-							if (i++ % (sampleRate * secPerWindow) == 0) {
-								windowNum++;
-							}
-							
-							
-							stmr.addData(String.valueOf(tid + "_" + i), 
-									new MeasurementInfo(tid, windowNum, measurement));
-						}
+				for (ConsumerRecord record : records) {
+					System.out.printf("Record topic = %s, partitoin number = %d, tid = %d\n", record.topic(), record.partition(), tid);
+
+					windowNum = 0; // override the window number each time new consumer record comes in
+					
+					TimeseriesCustom data = (TimeseriesCustom) record.value();
+					SegmentCustom segment = data.getSegment();
+					
+					// Overwrite the sample rate to be sure
+					sampleRate = segment.getSampleRate();
+
+					
+					// FIXME: Figure out the correct statement for this...
+					SqlFieldsQuery qry = new SqlFieldsQuery(
+							"select _key, _val from measurementinfo where "
+							+ "measurementinfo.windownum = ? and measurementinfo.tid = ?");
+					// Keep on spinning until we get don't have anything in cache associated with that window anymore
+					System.out.println(streamCache.query(qry.setArgs(windowNum, tid)).getAll());
+					System.out.printf("tid = %d, cache size = %d, window number = %d\n", tid, streamCache.size(CachePeekMode.ALL), windowNum);
+					
+					while (!streamCache.query(qry.setArgs(windowNum, tid))
+							.getAll().isEmpty()) { 
+						System.out.printf("tid = %d, there is data in Ignite cache associated with window number = %d\n", tid, windowNum);
+						Thread.sleep(5000);
 					}
+					
+
+					for (Object measurement : segment.getMainData()) {
+						if (i++ % (sampleRate * secPerWindow) == 0) {
+							windowNum++;
+						}
+						
+						// Once we are sure the previous window with the same number was processed for that consumer, we put a new window with this number
+						stmr.addData(String.valueOf(tid + "_" + i), 
+								new MeasurementInfo(tid, windowNum, measurement));
+					}
+					stmr.flush(); // Flush out all of the data to the cache
 				}
-				stmr.flush(); // Flush out all of the data to the cache
 				//Runtime run = Runtime.getRuntime();
 				//System.out.println("Memory used: " + (run.totalMemory() - run.freeMemory()));
 			}

@@ -4,7 +4,7 @@
   <groupId>edu.byu</groupId>
   <artifactId>SeismicProject</artifactId>
   <name>SeismicProject</name>
-  <version>1.0.1</version>
+  <version>0.0.3</version>
   <build>
     <plugins>
       <plugin>

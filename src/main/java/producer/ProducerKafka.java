@@ -5,11 +5,10 @@ import java.util.List;
 import java.util.Properties;
 
 import kafka.common.TopicExistsException;
-import main.java.timeseries.TimeseriesCustom;
+import main.java.general.timeseries.TimeseriesCustom;
 
 import java.text.*;
 import java.util.*;
-import java.util.stream.Stream;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -19,21 +18,18 @@ import edu.iris.dmc.service.*;
 import edu.iris.dmc.timeseries.model.Segment;
 import edu.iris.dmc.timeseries.model.Timeseries;
 
+@SuppressWarnings({ "unchecked", "rawtypes" })
 public class ProducerKafka {
 
-    private KafkaProducer producer;
-	List<String> stationList;
+	private final String topic;
+	private final List<String> stationList;
 
-    public ProducerKafka() {
-    	// the constructor will take a list of stations, which will be topic later on
-    	stationList = new ArrayList<String>();
-    	
-		stationList.add("IU-KBS-00-BHZ");
-    }
+	private final KafkaProducer producer;
     
+   	// TODO: Make the argument a file.input and have all of the input defined there
     public static void main(String[] args) {
-
         ProducerKafka prod = new ProducerKafka();
+
         try {
             prod.runKafkaProducer();
         } catch (TopicExistsException | IOException e) {
@@ -42,7 +38,13 @@ public class ProducerKafka {
 
     }
 
-    public void defineKafkaProducer() throws IOException {
+    public ProducerKafka() {
+    	// the constructor will take a list of stations, which will be topic later on
+    	stationList = new ArrayList<String>();
+		stationList.add("IU-KBS-00-BHZ");
+
+        topic = "test2";
+        
         // Define producer properties
         Properties props = new Properties();
         props.put("bootstrap.servers", "localhost:9092");
@@ -51,9 +53,8 @@ public class ProducerKafka {
         props.put("batch.size", 16384);
         props.put("linger.ms", 1);
         props.put("buffer.memory", 33554432);
-        props.put("paritioner.class", "main.java.producer.KafkaPartitioner");
-        props.put("key.serializer", "main.java.serialization.TimeseriesEncoder");
-        props.put("value.serializer", "main.java.serialization.TimeseriesEncoder");
+        props.put("key.serializer", "main.java.general.serialization.TimeseriesEncoder");
+        props.put("value.serializer", "main.java.general.serialization.TimeseriesEncoder");
 
         this.producer = new KafkaProducer<>(props);
     }
@@ -61,66 +62,94 @@ public class ProducerKafka {
 	public void runKafkaProducer() throws IOException {
         // log4j writes to stdout for now
         org.apache.log4j.BasicConfigurator.configure();
-
-        try {
-            this.defineKafkaProducer();
-        } catch (IOException e) {
-            System.out.println("Could not define Kafka Producer settings");
-            e.printStackTrace();
-        }
-
-        final String topic = "test2";
         
         List<Timeseries> timeSeriesCollection = this.getIrisMessage();
         
-        // There are 20 entries per second of IRIS data
         for (Timeseries timeseries : timeSeriesCollection) {
         	// Split the message into several so the whole chunk of data will go to different partitions
-        	List<TimeseriesCustom> ts_list = this.getCustomTimeseriesPatition(
-        			timeseries, this.producer.partitionsFor(topic).size());
-        	
-        	for (TimeseriesCustom ts : ts_list) {
-				ProducerRecord<String, TimeseriesCustom> data = new ProducerRecord<String, TimeseriesCustom>(topic, ts);
-				this.producer.send(data);
-        	}
+        	this.sendSegmentsToPatitions(timeseries, this.producer.partitionsFor(topic).size());
         }
         this.producer.close();
     }
 
-	private List<TimeseriesCustom> getCustomTimeseriesPatition(Timeseries timeseries, int numPartitions) {
-		List<TimeseriesCustom> _tsList = new ArrayList<TimeseriesCustom>();
+	/**
+	 * This function takes a timeseries object and goes through all of the segments in a single timeseries and 
+	 * sends them all to consumers. Before sending all of the data it will first split a single object in the collection
+	 * of segments into multiple segments in case we have multiple partitions per topic. 
+	 * There can be multiple segments per timeseries object. A consumer will receive a only one segment at a time and process one segment at a time only.
+	 * @param timeseries
+	 * @param numPartitions
+	 */
+	private void sendSegmentsToPatitions(Timeseries timeseries, int numPartitions) {
 		
-		Collection<Segment> allSegments = timeseries.getSegments();
-		Segment segment = allSegments.iterator().next();
-		// implement a check to see that there's only int data....
-		//List<Integer> measurements = segment.getIntData();
-		List<Integer> data = segment.getIntData();
+		// The problem is that we can't put multiple segments into one. Every chunk has a time frame associated with it. 
+		//			I will have to send data in chunks...maybe. Consumer is configured to handle this, so maybe I will just put it
+		//			the way it is, which is multiple Segments. However, we will have to change the way we are putting it into cache. Mainly, the window numbers will change
 		
-		// how much data to send to a single partitioner
-		Double seconds = Double.valueOf(segment.getSampleCount()) / segment.getSamplerate();
-		Double secondsPerPartition = seconds / Double.valueOf(numPartitions);
-	
-		for (int i = 0; i < numPartitions; i++) {
-			TimeseriesCustom ts = new TimeseriesCustom(timeseries.getNetworkCode(), timeseries.getStationCode(), 
-					timeseries.getLocation(), timeseries.getChannelCode());
-			ts.setChannel(timeseries.getChannel());
-			ts.setDataQuality(timeseries.getDataQuality());
+		
+		// I will also have to modify the SegmentsCustom to have just one List of generic objects
+		for (Segment segment : timeseries.getSegments()) {
 			
-			List<Integer> measurementsPerPartition = new ArrayList<Integer>();
-			for (int k = (int) (secondsPerPartition * i * segment.getSamplerate()); 
-					k < secondsPerPartition * segment.getSamplerate() * (i + 1); k++) {
+			List data = this.discoverMeasurementList(segment);
+			// TODO: What if there are multiple types of data in multiple lists...
+			
+			// Get the number of seconds this segment holds and figure out how many sends to send to a partition
+			Double seconds = Double.valueOf(segment.getSampleCount()) / segment.getSamplerate();
+			Double secondsPerPartition = seconds / Double.valueOf(numPartitions);
+			
+			for (int i = 0; i < numPartitions; i++) {
 				
-				measurementsPerPartition.add(data.get(k));
+				TimeseriesCustom ts = new TimeseriesCustom(timeseries.getNetworkCode(), timeseries.getStationCode(), 
+						timeseries.getLocation(), timeseries.getChannelCode());
+				
+				ts.setChannel(timeseries.getChannel());
+				ts.setDataQuality(timeseries.getDataQuality());
+				
+				List measurementsPerPartition = new ArrayList();
+				for (int k = (int) (secondsPerPartition * i * segment.getSamplerate()); 
+						k < secondsPerPartition * segment.getSamplerate() * (i + 1); k++) {
+					
+					measurementsPerPartition.add(data.get(k));
+				}
+				
+				ts.setSegment(segment, measurementsPerPartition);
+				
+				// Send to topic @topic, partition is @i, key is null, and data is @ts
+				ProducerRecord<String, TimeseriesCustom> producerData = new ProducerRecord<String, TimeseriesCustom>(topic, i, null, ts);
+				this.producer.send(producerData);
 			}
-			
-			// Specify which partition the message is going to go to
-			ts.setPartitionNum(i);
-			ts.setSegments(allSegments, measurementsPerPartition);
-			
-			_tsList.add(ts);
 		}
-        
-		return _tsList;
+		
+	}
+
+	
+	/**
+	 * This function discovers what type of data a segment holds and returns it as a generic list
+	 * @param single_segment
+	 * @return data associated with that segment
+	 */
+	private List discoverMeasurementList(Segment single_segment) {
+		List data = null;
+
+		switch(single_segment.getType()) {
+			case DOUBLE:
+				data = single_segment.getDoubleData();
+				break;
+			case INTEGER:
+				data = single_segment.getIntData();
+				break;
+			case INT24:
+				data = single_segment.getIntData();
+				break;
+			case FLOAT:
+				data = single_segment.getFloatData();
+				break;
+			case SHORT:
+				data = single_segment.getShortData();
+				break;
+		}
+		
+		return data;
 	}
 
 	private List<Timeseries> getIrisMessage() throws IOException {

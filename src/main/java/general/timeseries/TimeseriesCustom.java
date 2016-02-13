@@ -1,4 +1,4 @@
-package main.java.timeseries;
+package main.java.general.timeseries;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -10,7 +10,7 @@ import edu.iris.dmc.timeseries.model.Segment;
 
 
 /* Google Kryo does not serialize the java.util.login.Logger that is present in both Timeseries and Segment classes
- * This class almost fully implements the functionality of the Timseries class
+ * This class almost fully implements the functionality of the Timseries class defined by IRIS libraries
  */
 public class TimeseriesCustom extends java.lang.Object implements java.io.Serializable {
 
@@ -21,12 +21,8 @@ public class TimeseriesCustom extends java.lang.Object implements java.io.Serial
 		this.stationCode = stationCode;
 		this.location = location;
 		this.channelCode = channelCode;
-		
-		this.partitionNum = null;
 	}
 	
-	// This is a dirty hack in order to split a message between several consumers
-	private Integer partitionNum;
 	// ================================== ||
 	private String networkCode;
 	private String stationCode;
@@ -36,13 +32,9 @@ public class TimeseriesCustom extends java.lang.Object implements java.io.Serial
 	private Channel channel;
 	private char dataQuality;
 	
-	private Collection<SegmentCustom> segments;
+	private SegmentCustom segment;
 	// ================================== ||
 	
-	public Integer getPartitionNum() {
-		return partitionNum;
-	}
-
 	public String getNetworkCode() {
 		return networkCode;
 	}
@@ -67,14 +59,10 @@ public class TimeseriesCustom extends java.lang.Object implements java.io.Serial
 		return dataQuality;
 	}
 
-	public Collection<SegmentCustom> getSegments() {
-		return segments;
+	public SegmentCustom getSegment() {
+		return segment;
 	}
 	
-	public void setPartitionNum(Integer partitionNum) {
-		this.partitionNum = partitionNum;
-	}
-
 	public void setNetworkCode(String networkCode) {
 		this.networkCode = networkCode;
 	}
@@ -99,30 +87,29 @@ public class TimeseriesCustom extends java.lang.Object implements java.io.Serial
 		this.dataQuality = dataQuality;
 	}
 
-	public void setSegments(Collection<Segment> segments, List<Integer> measurementsPerPartition) {
-		List<SegmentCustom> scCollection = new ArrayList<SegmentCustom>();
-		for (Segment s : segments) {
-			SegmentCustom sc = new SegmentCustom(s.getType(), s.getSamplerate());
-			sc.setDoubleData(s.getDoubleData());
-			sc.setFloatData(s.getFloatData());
-			sc.setSampleCount(s.getSampleCount());
-			sc.setType(s.getType());
-			sc.setShortData(s.getShortData());
-			sc.setIntegerData(measurementsPerPartition);
-			sc.setEndTime(s.getEndTime());
-			sc.setExpectedNextSampleTime(s.getExpectedNextSampleTime());
-			sc.setStartTime(s.getStartTime());
-			scCollection.add(sc);
+	public void setSegment(Segment segment, List measurementsPerPartition) {
+//		for (Segment s : segments) {
+		SegmentCustom sc = new SegmentCustom(segment.getType(), segment.getSamplerate());
+//			sc.setDoubleData(s.getDoubleData());
+//			sc.setFloatData(s.getFloatData());
+//			sc.setShortData(s.getShortData());
+//			sc.setIntegerData(measurementsPerPartition);
+		sc.setMainData(measurementsPerPartition); /// this is the main data
+		sc.setSampleCount(segment.getSampleCount());
+		sc.setType(segment.getType());
+		sc.setEndTime(segment.getEndTime());
+		sc.setExpectedNextSampleTime(segment.getExpectedNextSampleTime());
+		sc.setStartTime(segment.getStartTime());
 //		public SegmentCustom(Segment.Type type, float sampleRate) {
-		}
-		this.segments = scCollection;
+//		}
+		this.segment = sc;
 	}
 
 	@Override
 	public String toString() {
 		return "TimeseriesCustom [networkCode=" + networkCode + ", stationCode=" + stationCode + ", location="
 				+ location + ", channelCode=" + channelCode + ", channel=" + channel + ", dataQuality=" + dataQuality
-				+ ", segments=" + segments + "]";
+				+ ", segment=" + segment + "]";
 	}
 
 	@Override
@@ -134,7 +121,7 @@ public class TimeseriesCustom extends java.lang.Object implements java.io.Serial
 		result = prime * result + dataQuality;
 		result = prime * result + ((location == null) ? 0 : location.hashCode());
 		result = prime * result + ((networkCode == null) ? 0 : networkCode.hashCode());
-		result = prime * result + ((segments == null) ? 0 : segments.hashCode());
+		result = prime * result + ((segment == null) ? 0 : segment.hashCode());
 		result = prime * result + ((stationCode == null) ? 0 : stationCode.hashCode());
 		return result;
 	}
@@ -170,10 +157,10 @@ public class TimeseriesCustom extends java.lang.Object implements java.io.Serial
 				return false;
 		} else if (!networkCode.equals(other.networkCode))
 			return false;
-		if (segments == null) {
-			if (other.segments != null)
+		if (segment == null) {
+			if (other.segment != null)
 				return false;
-		} else if (!segments.equals(other.segments))
+		} else if (!segment.equals(other.segment))
 			return false;
 		if (stationCode == null) {
 			if (other.stationCode != null)

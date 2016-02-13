@@ -1,13 +1,12 @@
-package main.java.timeseries;
+package main.java.general.timeseries;
 
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 import edu.iris.dmc.fdsn.station.model.Channel;
 import edu.iris.dmc.timeseries.model.Segment;
 
+@SuppressWarnings({ "rawtypes", "serial" })
 public class SegmentCustom extends java.lang.Object implements java.io.Serializable {//, Comparable<SegmentCustom> {
 	
 	public SegmentCustom() { }
@@ -24,12 +23,19 @@ public class SegmentCustom extends java.lang.Object implements java.io.Serializa
 	private List<Double> doubleData;
 	private List<Float> floatData;
 	private List<Integer> integerData;
+	private List<Short> shortData;
 	
+	// Once we discover what type of data we have, we just put it in a generic list
+	private List mainData;
+	
+	// TODO: Consumer these times are not necessarily be 
+	//	correct per consumer, so don't rely on them
+	//  To fix you need to go to ProducerKafka and make sure that when 
+	//	you are sending data you override the timestamps
 	private Timestamp startTime;
 	private Timestamp endTime;
 	private Timestamp expectedNextSampleTime;
 	private int sampleCount;
-	private List<Short> shortData;
 	// =========================== ||
 /*
 	@Override
@@ -146,6 +152,10 @@ public class SegmentCustom extends java.lang.Object implements java.io.Serializa
 		return shortData;
 	}
 
+	public List getMainData() {
+		return mainData;
+	}
+
 	public void setType(Segment.Type type) {
 		this.type = type;
 	}
@@ -184,6 +194,10 @@ public class SegmentCustom extends java.lang.Object implements java.io.Serializa
 
 	public void setShortData(List<Short> shortData) {
 		this.shortData = shortData;
+	}
+
+	public void setMainData(List mainData) {
+		this.mainData = mainData;
 	}
 	
 }
