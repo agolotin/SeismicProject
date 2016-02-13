@@ -116,7 +116,7 @@ public class ConsumerKafka implements Runnable, Serializable {
 				ConsumerRecords<String, TimeseriesCustom> records = consumer.poll(Long.MAX_VALUE);
 
 				for (ConsumerRecord record : records) {
-					System.out.printf("Record topic = %s, partitoin number = %d, tid = %d\n", record.topic(), record.partition(), tid);
+					System.out.printf("Record topic = %s, partition number = %d, tid = %d\n", record.topic(), record.partition(), tid);
 
 					windowNum = 0; // override the window number each time new consumer record comes in
 					
@@ -135,13 +135,18 @@ public class ConsumerKafka implements Runnable, Serializable {
 					System.out.println(streamCache.query(qry.setArgs(windowNum, tid)).getAll());
 					System.out.printf("tid = %d, cache size = %d, window number = %d\n", tid, streamCache.size(CachePeekMode.ALL), windowNum);
 					
-					while (!streamCache.query(qry.setArgs(windowNum, tid))
-							.getAll().isEmpty()) { 
+					
+					//TODO: Artem, look at this modification. Is this what you meant for blocking on the cache?
+//					while (!streamCache.query(qry.setArgs(windowNum, tid))
+//							.getAll().isEmpty()) { 
+//						System.out.printf("tid = %d, there is data in Ignite cache associated with window number = %d\n", tid, windowNum);
+//						Thread.sleep(5000);
+//					}
+					
+					while (streamCache.get(String.valueOf(tid + "_" + i) ) != null) { 
 						System.out.printf("tid = %d, there is data in Ignite cache associated with window number = %d\n", tid, windowNum);
-						Thread.sleep(5000);
 					}
 					
-
 					for (Object measurement : segment.getMainData()) {
 						if (i++ % (sampleRate * secPerWindow) == 0) {
 							windowNum++;
