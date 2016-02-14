@@ -22,7 +22,7 @@ import main.java.streaming.ignite.server.MeasurementInfo;
 //import org.apache.ignite.cache.query.SqlQuery;
 //import org.apache.ignite.lang.IgniteBiPredicate;
 
-/*
+/**
  * IgniteQuery is used to pull data from the Ignite server cache after 
  * caching has been performed by the ConsumerKafka instances. IgniteQuery 
  * creates a connection to the cache using an Ignite Client, performs a 
@@ -31,7 +31,10 @@ import main.java.streaming.ignite.server.MeasurementInfo;
  * application.
  */
 public class IgniteQuery {
-	/*
+	
+	private Integer consumerID;
+	private String topic;
+	/**
 	 * Entry point for the IgniteQuery class. No args are needed. Automatically
 	 * calls runQuery
 	 */
@@ -39,8 +42,13 @@ public class IgniteQuery {
 		IgniteQuery querier = new IgniteQuery();
 		querier.runQuery();
 	}
+	
+	public IgniteQuery() {
+		consumerID = 1;
+		topic = "test2";
+	}
 
-	/*
+	/**
 	 * Runs a query to the cache that IgniteCacheConfig.timeseriesCache configures.
 	 * Starts an Ignite client, formats a general SQL query, and repeatedly queries
 	 * all matching rows from the cache. These rows are printed to the console and
@@ -51,8 +59,9 @@ public class IgniteQuery {
 		Ignition.setClientMode(true);
 
 		try (Ignite ignite = Ignition.start()) {
+			
 			IgniteCache<String, MeasurementInfo> streamCache = ignite
-					.getOrCreateCache(IgniteCacheConfig.timeseriesCache());
+					.getOrCreateCache(IgniteCacheConfig.timeseriesCache(topic));
 			streamCache.clear();
 
 			// Select all of the entries for a single window depending on the
@@ -63,10 +72,9 @@ public class IgniteQuery {
 			int i = 1;
 			while (true) {
 				// Execute queries.
-				List<List<?>> result = streamCache.query(query.setArgs(i, 1)).getAll();
+				List<List<?>> result = streamCache.query(query.setArgs(i, consumerID)).getAll();
 
-				System.out.println(result.toString());
-				System.out.println(streamCache.size(CachePeekMode.ALL));
+				System.out.println("Size of cache = " + streamCache.size(CachePeekMode.ALL));
 
 				if (!result.isEmpty()) {
 					Set<String> toDelete = new HashSet<String>();

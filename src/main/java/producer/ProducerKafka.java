@@ -31,7 +31,8 @@ public class ProducerKafka {
 
 	private final KafkaProducer producer;
     
-   	/*
+   	/**
+   	 * 
    	 * Entry point for KafkaProducer. No args are required currently,
    	 * although later should take list of stations as input.
    	 * Statically creates instance of the class and calls run function.
@@ -48,7 +49,7 @@ public class ProducerKafka {
 
     }
 
-    /*
+    /**
      * Constructor for ProducerKafka. Currently takes no arguments, although it should later
      * receive the incoming list of stations are mentioned in main() comment.
      * The constructor sets the topic name for the ProducerKafka Instance and 
@@ -75,7 +76,7 @@ public class ProducerKafka {
         this.producer = new KafkaProducer<>(props);
     }
 
-    /*
+    /**
      * Configures the log, gets a message from the IRIS service, then loops through the resulting 
      * timeSeriesCollection and redirects the data to the sendSegmentsToPartitions function   
      */
