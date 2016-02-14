@@ -2,17 +2,19 @@ package main.java.consumer;
 
 import java.io.Serializable;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Properties;
 
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 
-import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.stream.StreamTransformer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -22,15 +24,6 @@ import main.java.general.timeseries.SegmentCustom;
 import main.java.general.timeseries.TimeseriesCustom;
 import main.java.streaming.ignite.server.IgniteCacheConfig;
 import main.java.streaming.ignite.server.MeasurementInfo;
-
-import org.apache.ignite.*;
-import org.apache.ignite.cache.CachePeekMode;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.communication.CommunicationSpi;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.stream.StreamReceiver;
-import org.apache.ignite.stream.StreamTransformer;
 
 @SuppressWarnings({"unchecked", "rawtypes", "serial"})
 public class ConsumerKafka implements Runnable, Serializable {
@@ -111,22 +104,22 @@ public class ConsumerKafka implements Runnable, Serializable {
 			Integer secPerWindow = 5;
 			float sampleRate = 20; // default sample rate
 
-			Integer windowNum, i = 0;  // i will always be unique
+			Integer windowNum, i;  // i will always be unique
 			while (true) {
 				ConsumerRecords<String, TimeseriesCustom> records = consumer.poll(Long.MAX_VALUE);
 
 				for (ConsumerRecord record : records) {
 					System.out.printf("Record topic = %s, partition number = %d, tid = %d\n", record.topic(), record.partition(), tid);
 
-					windowNum = 0; // override the window number each time new consumer record comes in
+					windowNum = 0; 
+					i = 0; // override the window number each time new consumer record comes in
 					
 					TimeseriesCustom data = (TimeseriesCustom) record.value();
 					SegmentCustom segment = data.getSegment();
 					
 					// Overwrite the sample rate to be sure
 					sampleRate = segment.getSampleRate();
-
-					
+										
 					// FIXME: Figure out the correct statement for this...
 					SqlFieldsQuery qry = new SqlFieldsQuery(
 							"select _key, _val from measurementinfo where "
