@@ -1,31 +1,41 @@
 package main.java.streaming.ignite.server;
 
-import javax.cache.configuration.Factory;
+//TODO: Remove commented code if unneeded
+//import javax.cache.configuration.Factory;
 import javax.cache.configuration.FactoryBuilder;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 
-import main.java.general.timeseries.TimeseriesCustom;
+//import main.java.general.timeseries.TimeseriesCustom;
+//import org.apache.ignite.cache.CacheTypeFieldMetadata;
+//import org.apache.ignite.cache.CacheTypeMetadata;
 
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CacheTypeFieldMetadata;
-import org.apache.ignite.cache.CacheTypeMetadata;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.store.*;
-
-import java.sql.Types;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.concurrent.*;
 
+//import org.apache.ignite.cache.store.*;
+//import java.sql.Types;
+//import java.util.ArrayList;
+//import java.util.Collection;
+//import java.util.HashMap;
+//import java.util.LinkedHashMap;
+//import java.util.Map;
+
+/*
+ * IgniteCacheConfig provides the configuration for the Ignite caches
+ * used by the KafkaConsumers (which have built in Ignite clients) to define 
+ * how data is stored on the server. 
+ */
 public class IgniteCacheConfig 
 {
-	// Key is the number of the window, and value is the measurement
-	@SuppressWarnings("deprecation")
+	/*
+	 * The key passed to the cache configuration is a String with the 
+	 * thread ID concatenated with the number of the window and spaced 
+	 * with an underscore (_).
+	 * Value is a measurement from the streaming data typed as a MeasurementInfo object. 
+	 */
 	public static CacheConfiguration<String, MeasurementInfo> timeseriesCache() 
 	{
 		CacheConfiguration<String, MeasurementInfo> config = new CacheConfiguration<String, MeasurementInfo>("seismic-data");

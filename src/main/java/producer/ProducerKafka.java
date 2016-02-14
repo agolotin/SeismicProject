@@ -18,6 +18,11 @@ import edu.iris.dmc.service.*;
 import edu.iris.dmc.timeseries.model.Segment;
 import edu.iris.dmc.timeseries.model.Timeseries;
 
+/*
+ * ProducerKafka requests the data stream from the IRIS database and 
+ * partitions the streams to the KafkaConsumers, which then send the 
+ * data to the Ignite Server caches
+ */
 @SuppressWarnings({ "unchecked", "rawtypes" })
 public class ProducerKafka {
 
@@ -26,8 +31,13 @@ public class ProducerKafka {
 
 	private final KafkaProducer producer;
     
-   	// TODO: Make the argument a file.input and have all of the input defined there
+   	/*
+   	 * Entry point for KafkaProducer. No args are required currently,
+   	 * although later should take list of stations as input.
+   	 * Statically creates instance of the class and calls run function.
+   	 */
     public static void main(String[] args) {
+    	// TODO: Make the argument a file.input and have all of the input defined there
         ProducerKafka prod = new ProducerKafka();
 
         try {
@@ -38,12 +48,18 @@ public class ProducerKafka {
 
     }
 
+    /*
+     * Constructor for ProducerKafka. Currently takes no arguments, although it should later
+     * receive the incoming list of stations are mentioned in main() comment.
+     * The constructor sets the topic name for the ProducerKafka Instance and 
+     * configures the Kafka properties.
+     */
     public ProducerKafka() {
-    	// the constructor will take a list of stations, which will be topic later on
+    	// TODO: the constructor will take a list of stations, which will be topic later on
     	stationList = new ArrayList<String>();
 		stationList.add("IU-KBS-00-BHZ");
 
-        topic = "test2";
+		topic = "test2";
         
         // Define producer properties
         Properties props = new Properties();
@@ -59,6 +75,10 @@ public class ProducerKafka {
         this.producer = new KafkaProducer<>(props);
     }
 
+    /*
+     * Configures the log, gets a message from the IRIS service, then loops through the resulting 
+     * timeSeriesCollection and redirects the data to the sendSegmentsToPartitions function   
+     */
 	public void runKafkaProducer() throws IOException {
         // log4j writes to stdout for now
         org.apache.log4j.BasicConfigurator.configure();
@@ -67,24 +87,26 @@ public class ProducerKafka {
         
         for (Timeseries timeseries : timeSeriesCollection) {
         	// Split the message into several so the whole chunk of data will go to different partitions
-        	this.sendSegmentsToPatitions(timeseries, this.producer.partitionsFor(topic).size());
+        	this.sendSegmentsToPartitions(timeseries, this.producer.partitionsFor(topic).size());
         }
         this.producer.close();
     }
 
 	/**
-	 * This function takes a timeseries object and goes through all of the segments in a single timeseries and 
-	 * sends them all to consumers. Before sending all of the data it will first split a single object in the collection
+	 * This function takes a timeseries object, goes through all of the segments in a single timeseries, and 
+	 * sends them all to consumers. Before sending the data it will first split a single object in the collection
 	 * of segments into multiple segments in case we have multiple partitions per topic. 
-	 * There can be multiple segments per timeseries object. A consumer will receive a only one segment at a time and process one segment at a time only.
+	 * There can be multiple segments per timeseries object. A consumer will receive only one segment at a time 
+	 * and process one segment at a time only.
 	 * @param timeseries
 	 * @param numPartitions
 	 */
-	private void sendSegmentsToPatitions(Timeseries timeseries, int numPartitions) {
+	private void sendSegmentsToPartitions(Timeseries timeseries, int numPartitions) {
 		
 		// The problem is that we can't put multiple segments into one. Every chunk has a time frame associated with it. 
-		//			I will have to send data in chunks...maybe. Consumer is configured to handle this, so maybe I will just put it
-		//			the way it is, which is multiple Segments. However, we will have to change the way we are putting it into cache. Mainly, the window numbers will change
+		// I will have to send data in chunks...maybe. Consumer is configured to handle this, so maybe I will just put it
+		// the way it is, which is multiple Segments. However, we will have to change the way we are putting it into cache. 
+		// Mainly, the window numbers will change
 		
 		
 		// I will also have to modify the SegmentsCustom to have just one List of generic objects
@@ -152,18 +174,21 @@ public class ProducerKafka {
 		return data;
 	}
 
+	//Gets the data streams from IRIS, based on fields set up in the constructor.
+	//Returns a list of timeseries objects with the data.
 	private List<Timeseries> getIrisMessage() throws IOException {
 		ServiceUtil serviceUtil = ServiceUtil.getInstance();
 		serviceUtil.setAppName("SeismicEventsData");
 		WaveformService waveformService = serviceUtil.getWaveformService();
 		
-		DateFormat dfm = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-		dfm.setTimeZone(TimeZone.getTimeZone("GMT"));
+		DateFormat dateformat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+		//TODO: We will want to remove the hardcoding of the time zone and time period
+		dateformat.setTimeZone(TimeZone.getTimeZone("GMT"));
 		Date startDate = null;
 		Date endDate = null;
 		try {
-			startDate = dfm.parse("2005-02-17T00:00:00");
-			endDate = dfm.parse("2005-02-17T00:10:00");
+			startDate = dateformat.parse("2005-02-17T00:00:00");
+			endDate = dateformat.parse("2005-02-17T00:10:00");
 		} catch (ParseException e) {
 			e.printStackTrace();
 		}

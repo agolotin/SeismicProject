@@ -1,12 +1,8 @@
 package main.java.general.serialization;
 
 import java.io.ByteArrayInputStream;
-import java.util.Collection;
 import java.util.Map;
 import java.util.zip.InflaterInputStream;
-
-import main.java.general.timeseries.SegmentCustom;
-import main.java.general.timeseries.TimeseriesCustom;
 
 import org.apache.kafka.common.serialization.Deserializer;
 
@@ -14,13 +10,30 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
 
+import main.java.general.timeseries.SegmentCustom;
+import main.java.general.timeseries.TimeseriesCustom;
+
+/*
+ * In order to use the TimeseriesCustom class to pass data from the ProducerKafka
+ * to the ConsumerKafka, we need a custom Serializer and a custom Deserializer.
+ * This TimeseriesDecoder is the custom Deserializer, used to deserialize timeseries 
+ * data as it is received by the ConsumerKafka 
+ */
 public class TimeseriesDecoder implements Deserializer<TimeseriesCustom>{
 	
 	public TimeseriesDecoder() { }
 	
+	/*
+	 * (non-Javadoc)
+	 * @see org.apache.kafka.common.serialization.Deserializer#deserialize(java.lang.String, byte[])
+	 * @param arg0
+	 * @param ts
+	 */
 	@Override
 	public TimeseriesCustom deserialize(String arg0, byte[] ts) {
-		if (ts == null) return null;
+		if (ts == null) {
+			return null;
+		}
 		
 		Kryo kryo = new Kryo();
 		kryo.register(TimeseriesCustom.class, new JavaSerializer());
