@@ -57,6 +57,8 @@ public class ProducerKafka {
      */
     public ProducerKafka() {
     	// TODO: the constructor will take a list of stations, which will be topic later on
+    	// XXX: Implement a check that will make sure 
+    	//	that the number of samples we are sending is divisible by the number of partitions
     	stationList = new ArrayList<String>();
 		stationList.add("IU-KBS-00-BHZ");
 
@@ -109,18 +111,17 @@ public class ProducerKafka {
 		// the way it is, which is multiple Segments. However, we will have to change the way we are putting it into cache. 
 		// Mainly, the window numbers will change
 		
-		
-		// I will also have to modify the SegmentsCustom to have just one List of generic objects
 		for (Segment segment : timeseries.getSegments()) {
 			
 			List data = this.discoverMeasurementList(segment);
 			// TODO: What if there are multiple types of data in multiple lists...
 			
-			// Get the number of seconds this segment holds and figure out how many sends to send to a partition
-			Double seconds = Double.valueOf(segment.getSampleCount()) / segment.getSamplerate();
-			Double secondsPerPartition = seconds / Double.valueOf(numPartitions);
+			// Get the number of samples this segment holds and figure out how many sends to send to a partition
+			// TODO: Check that the number of samples we are sending is divisible by the number of partitions
+			//Double seconds = Double.valueOf(segment.getSampleCount()) / segment.getSamplerate();
+			Double samplesPerPartition = segment.getSampleCount() / Double.valueOf(numPartitions);
 			
-			for (int i = 0; i < numPartitions; i++) {
+			for (int partitionNum = 0; partitionNum < numPartitions; partitionNum++) {
 				
 				TimeseriesCustom ts = new TimeseriesCustom(timeseries.getNetworkCode(), timeseries.getStationCode(), 
 						timeseries.getLocation(), timeseries.getChannelCode());
@@ -129,16 +130,17 @@ public class ProducerKafka {
 				ts.setDataQuality(timeseries.getDataQuality());
 				
 				List measurementsPerPartition = new ArrayList();
-				for (int k = (int) (secondsPerPartition * i * segment.getSamplerate()); 
-						k < secondsPerPartition * segment.getSamplerate() * (i + 1); k++) {
+				for (int k = (int) (samplesPerPartition * partitionNum); 
+						k < samplesPerPartition * (partitionNum + 1); k++) {
 					
 					measurementsPerPartition.add(data.get(k));
 				}
 				
 				ts.setSegment(segment, measurementsPerPartition);
 				
-				// Send to topic @topic, partition is @i, key is null, and data is @ts
-				ProducerRecord<String, TimeseriesCustom> producerData = new ProducerRecord<String, TimeseriesCustom>(topic, i, null, ts);
+				// Send to topic @topic, partition is @partitionNum, key is null, and data is @ts
+				ProducerRecord<String, TimeseriesCustom> producerData = 
+						new ProducerRecord<String, TimeseriesCustom>(topic, partitionNum, null, ts);
 				this.producer.send(producerData);
 			}
 		}

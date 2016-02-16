@@ -44,7 +44,7 @@ public class IgniteQuery {
 	}
 	
 	public IgniteQuery() {
-		consumerID = 1;
+		consumerID = 0;
 		topic = "test2";
 	}
 
@@ -60,32 +60,34 @@ public class IgniteQuery {
 
 		try (Ignite ignite = Ignition.start()) {
 			
-			IgniteCache<String, MeasurementInfo> streamCache = ignite
+			IgniteCache<String, List<MeasurementInfo>> streamCache = ignite
 					.getOrCreateCache(IgniteCacheConfig.timeseriesCache(topic));
-			streamCache.clear();
 
 			// Select all of the entries for a single window depending on the
 			// window number
-			SqlFieldsQuery query = new SqlFieldsQuery("select _key, _val from measurementinfo where "
-					+ "measurementinfo.windownum = ? and measurementinfo.tid = ?");
+			//SqlFieldsQuery query = new SqlFieldsQuery("select _key, _val from measurementinfo where "
+			//		+ "measurementinfo.windownum = ? and measurementinfo.tid = ?");
 
-			int i = 1;
+			int i = 0;
 			while (true) {
 				// Execute queries.
-				List<List<?>> result = streamCache.query(query.setArgs(i, consumerID)).getAll();
 
-				System.out.println("Size of cache = " + streamCache.size(CachePeekMode.ALL));
-
-				if (!result.isEmpty()) {
-					Set<String> toDelete = new HashSet<String>();
-					for (List<?> l : result) {
-						toDelete.add((String) l.get(0));
-					}
-					streamCache.removeAll(toDelete);
-					i++;
-				}
-
-				Thread.sleep(5000);
+				System.out.println("Size of cache = " + streamCache.size(CachePeekMode.ALL) + "; i = " + i);
+				List<MeasurementInfo> rs = streamCache.getAndRemove(consumerID + "_" + i);
+				System.out.println(rs);
+				i++;
+//				List<List<?>> result = streamCache.query(query.setArgs(i, consumerID)).getAll();
+//
+//				if (!result.isEmpty()) {
+//					Set<String> toDelete = new HashSet<String>();
+//					for (List<?> l : result) {
+//						toDelete.add((String) l.get(0));
+//					}
+//					streamCache.removeAll(toDelete);
+//					i++;
+//				}
+//
+				Thread.sleep(500);
 			}
 		}
 		catch (InterruptedException e) {

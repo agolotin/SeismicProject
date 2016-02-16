@@ -11,10 +11,12 @@ import javax.cache.expiry.Duration;
 //import org.apache.ignite.cache.CacheTypeMetadata;
 
 
+
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.cache.*;
 
+import java.util.List;
 import java.util.concurrent.*;
 
 //import org.apache.ignite.cache.store.*;
@@ -36,17 +38,17 @@ public class IgniteCacheConfig
 	 * The key passed to the cache configuration is a String with the 
 	 * thread ID concatenated with the number of the window and spaced 
 	 * with an underscore (_).
-	 * Value is a measurement from the streaming data typed as a MeasurementInfo object. 
+	 * Value is a list of measurements from the streaming data typed as an array list of MeasurementInfo objects. 
 	 * @param there are multiple caches, specifically one cache per topic (or station that we are pulling data from)
 	 * @return new instance of the cache or the currect instance of cache depending on a topic
 	 */
-	public static CacheConfiguration<String, MeasurementInfo> timeseriesCache(String topic) 
+	public static CacheConfiguration<String, List<MeasurementInfo>> timeseriesCache(String topic) 
 	{
-		CacheConfiguration<String, MeasurementInfo> config = new 
-				CacheConfiguration<String, MeasurementInfo>("seismic-data-" + topic);
+		CacheConfiguration<String, List<MeasurementInfo>> config = new 
+				CacheConfiguration<String, List<MeasurementInfo>>("seismic-data-" + topic);
 		
 		// Index individual measurements
-		config.setIndexedTypes(String.class, MeasurementInfo.class);
+		config.setIndexedTypes(String.class, List.class);
 		// Set the amount of time we want our entries to persist in cache
 		config.setExpiryPolicyFactory(FactoryBuilder.factoryOf(new CreatedExpiryPolicy(new Duration(TimeUnit.HOURS, 5))));
 		// Make sure the cache is partitioned over multiple nodes

@@ -1,7 +1,9 @@
 package main.java.consumer;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 
 import javax.cache.processor.EntryProcessorException;
@@ -79,9 +81,9 @@ public class ConsumerKafka implements Runnable, Serializable {
         	conf.setClientMode(true);
         	Ignite ignite = Ignition.start(conf);
         	
-			IgniteCache<String, MeasurementInfo> streamCache = 
+			IgniteCache<String, List<MeasurementInfo>> streamCache = 
 					ignite.getOrCreateCache(IgniteCacheConfig.timeseriesCache(topic));
-			IgniteDataStreamer<String, MeasurementInfo> dataStreamer = 
+			IgniteDataStreamer<String, List<MeasurementInfo>> dataStreamer = 
 					ignite.dataStreamer(streamCache.getName());
 			
 			// For some reason we have to overwrite the value of 
@@ -89,13 +91,13 @@ public class ConsumerKafka implements Runnable, Serializable {
 			// TESTME: Try get rid of these next 15 or so lines and test Ignite query
 			dataStreamer.allowOverwrite(true);
 			
-			dataStreamer.receiver(new StreamTransformer<String, MeasurementInfo>() {
+			dataStreamer.receiver(new StreamTransformer<String, List<MeasurementInfo>>() {
 
 				@Override
-				public Object process(MutableEntry<String, MeasurementInfo> e, Object... arg)
+				public Object process(MutableEntry<String, List<MeasurementInfo>> e, Object... arg)
 						throws EntryProcessorException {
 					
-					e.setValue((MeasurementInfo) arg[0]);
+					e.setValue((List<MeasurementInfo>) arg[0]);
 					
 					return null;
 				}
@@ -107,6 +109,8 @@ public class ConsumerKafka implements Runnable, Serializable {
 			while (true) {
 				ConsumerRecords<String, TimeseriesCustom> records = consumer.poll(Long.MAX_VALUE);
 				this.sendData(records, streamCache, dataStreamer, secPerWindow);
+				// Make sure the data that did not get send to the cache was sent
+				dataStreamer.flush();
 			}
         }
         catch(Exception e) {
@@ -121,40 +125,47 @@ public class ConsumerKafka implements Runnable, Serializable {
 	// Loops through list of records and for each record
 	// breaks the data up into measurements, then sends the
 	// measurements to the Ignite cache
-	private void sendData(ConsumerRecords<String, TimeseriesCustom> records, IgniteCache<String, MeasurementInfo> streamCache, 
-			IgniteDataStreamer<String, MeasurementInfo> dataStreamer, Integer secPerWindow) {
+	private void sendData(ConsumerRecords<String, TimeseriesCustom> records, IgniteCache<String, List<MeasurementInfo>> streamCache, 
+			IgniteDataStreamer<String, List<MeasurementInfo>> dataStreamer, Integer secPerWindow) {
 
 		for (ConsumerRecord record : records) {
 			System.out.printf("Record topic = %s, partitoin number = %d, tid = %d\n", record.topic(), record.partition(), tid);
 			
 			// override the window number each time new consumer record comes in
-			Integer windowNum = 0, i = 0; 
-			
+			Integer windowNum = 0; 
+		
 			TimeseriesCustom data = (TimeseriesCustom) record.value();
 			SegmentCustom segment = data.getSegment();
 			
 			// Overwrite the sample rate to be sure
 			final float sampleRate = segment.getSampleRate();
-
-			for (Object measurement : segment.getMainData()) {
-				if (i++ % (sampleRate * secPerWindow) == 0) {
+			
+			List<MeasurementInfo> seismicDataList = new ArrayList<MeasurementInfo>();
+			List mainData = segment.getMainData();
+			
+			for (int pos = 0; pos < mainData.size(); pos++) {
+				// Add the new measurement to the list
+				seismicDataList.add(new MeasurementInfo(tid, windowNum, mainData.get(pos)));
+				
+				// If we have added enough data for a single window 
+				if (seismicDataList.size() % (sampleRate * secPerWindow) == 0) {
+					// Make sure we are not overwriting existing windows in cache
+					// have the thread busy wait until we can put a new window
+					while (streamCache.get(tid + "_" + windowNum) != null) {
+					/*
+						System.out.printf("tid = %d, there is data in Ignite cache "
+								+ "associated with window number = %d, i = %d\n", tid, windowNum, i);
+					*/
+					}
+					// Once we are sure the previous window with the same number was processed 
+					//	for that consumer, we put a new window with this number
+					dataStreamer.addData(String.valueOf(tid + "_" + windowNum), seismicDataList);
+					// Clear the list that contains all data for a single window
+					seismicDataList.clear();
+					// Increment the window number
 					windowNum++;
 				}
-				
-				while (streamCache.get(tid + "_" + i) != null) {
-					System.out.printf("tid = %d, there is data in Ignite cache associated with window number = %d, i = %d\n", tid, windowNum, i);
-					try {
-						Thread.sleep(5000);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-				}
-				
-				// Once we are sure the previous window with the same number was processed for that consumer, we put a new window with this number
-				dataStreamer.addData(String.valueOf(tid + "_" + i), 
-						new MeasurementInfo(tid, windowNum, measurement));
 			}
-			dataStreamer.flush(); // Flush out all of the data to the cache
 		}
 	}
     
