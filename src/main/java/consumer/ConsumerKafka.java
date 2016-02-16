@@ -66,7 +66,7 @@ public class ConsumerKafka implements Runnable, Serializable {
         	IgniteConfiguration conf = new IgniteConfiguration();
         	// Since multiple consumers will be running on a single node, 
         	//	we need to specify different names for them
-        	conf.setGridName(String.valueOf("Grid" + tid));
+        	conf.setGridName(String.valueOf("Grid" + tid + "-" + topic));
         	
         	// REVIEWME: Review what communication spi does...
         	//TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
@@ -138,7 +138,7 @@ public class ConsumerKafka implements Runnable, Serializable {
 					}
 					// Once we are sure the previous window with the same number was processed 
 					//	for that consumer, we put a new window with this number
-					dataStreamer.addData(String.valueOf(tid + "_" + windowNum), seismicDataList);
+					dataStreamer.addData(String.valueOf(tid + "-" + windowNum), seismicDataList);
 					// Clear the list that contains all data for a single window
 					seismicDataList.clear();
 					// Increment the window number

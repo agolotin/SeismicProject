@@ -37,7 +37,7 @@ public class IgniteCacheConfig
 	/**
 	 * The key passed to the cache configuration is a String with the 
 	 * thread ID concatenated with the number of the window and spaced 
-	 * with an underscore (_).
+	 * with a dash (-).
 	 * Value is a list of measurements from the streaming data typed as an array list of MeasurementInfo objects. 
 	 * @param there are multiple caches, specifically one cache per topic (or station that we are pulling data from)
 	 * @return new instance of the cache or the currect instance of cache depending on a topic

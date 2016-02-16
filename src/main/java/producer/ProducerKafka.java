@@ -1,5 +1,6 @@
 package main.java.producer;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.List;
 import java.util.Properties;
@@ -27,19 +28,30 @@ import edu.iris.dmc.timeseries.model.Timeseries;
 public class ProducerKafka {
 
 	private final String topic;
-	private final List<String> stationList;
+	private final String[] stationList;
 
 	private final KafkaProducer producer;
     
    	/**
    	 * 
-   	 * Entry point for KafkaProducer. No args are required currently,
-   	 * although later should take list of stations as input.
+   	 * Entry point for KafkaProducer. 
    	 * Statically creates instance of the class and calls run function.
+	 * @param The input argument is a .properties file
+   	 * @throws IOException 
    	 */
-    public static void main(String[] args) {
-    	// TODO: Make the argument a file.input and have all of the input defined there
-        ProducerKafka prod = new ProducerKafka();
+    public static void main(String[] args) throws IOException {
+    	if (args.length != 1) {
+    		System.out.println("USAGE: java -cp target/SeismicProject-X.X.X.jar "
+    				+ "main.java.producer.ProducerKafka input/producer.input.properties");
+    		System.exit(1);
+    	}
+    	
+    	Properties inputProps = new Properties();
+    	FileInputStream in = new FileInputStream(args[0]);
+    	inputProps.load(in);
+    	in.close();
+    	
+        ProducerKafka prod = new ProducerKafka(inputProps);
 
         try {
             prod.runKafkaProducer();
@@ -55,14 +67,13 @@ public class ProducerKafka {
      * The constructor sets the topic name for the ProducerKafka Instance and 
      * configures the Kafka properties.
      */
-    public ProducerKafka() {
+    public ProducerKafka(Properties inputProps) {
     	// TODO: the constructor will take a list of stations, which will be topic later on
     	// XXX: Implement a check that will make sure 
     	//	that the number of samples we are sending is divisible by the number of partitions
-    	stationList = new ArrayList<String>();
-		stationList.add("IU-KBS-00-BHZ");
+    	stationList = ((String) inputProps.get("stations")).split(",");
 
-		topic = "test2";
+		topic = (String) inputProps.get("topics");
         
         // Define producer properties
         Properties props = new Properties();

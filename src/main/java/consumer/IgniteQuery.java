@@ -73,7 +73,7 @@ public class IgniteQuery {
 				// Execute queries.
 
 				System.out.println("Size of cache = " + streamCache.size(CachePeekMode.ALL) + "; i = " + i);
-				List<MeasurementInfo> rs = streamCache.getAndRemove(consumerID + "_" + i);
+				List<MeasurementInfo> rs = streamCache.getAndRemove(consumerID + "-" + i);
 				System.out.println(rs);
 				i++;
 //				List<List<?>> result = streamCache.query(query.setArgs(i, consumerID)).getAll();

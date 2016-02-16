@@ -1,7 +1,10 @@
 package main.java.consumer;
 
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -11,34 +14,74 @@ import java.util.concurrent.Executors;
  * to run as many as needed.
  */
 public class ConsumerRun {
+	
+	private final Integer[] allNumConsumers;
+	private final String[] allTopics;
+	private final String groupId;
+	
+	// Just in case we need to keep track of executors
+	private final List<ExecutorService> executors;
+	
+	public ConsumerRun(Properties inputProps) {
+		allTopics = ((String) inputProps.get("topics")).split(",");
+		String[] tempNumConsumers = ((String) inputProps.get("numconsumers")).split(",");
+		
+		if (tempNumConsumers.length != allTopics.length) {
+			System.out.println("Number of topics does not match the size of the list of consumers");
+			System.exit(1);
+		}
+		
+		allNumConsumers = new Integer[tempNumConsumers.length];
+		for (int i = 0; i < tempNumConsumers.length; i++) {
+			allNumConsumers[i] = Integer.parseInt(tempNumConsumers[i]);
+		}
+		
+		groupId = (String) inputProps.get("groupid");
+		
+		executors = new ArrayList<ExecutorService>();
+	}
 
-	/*
+	/**
 	 * Entry point for ConsumerRun, calls runConsumers function.
-	 * No arguments are currently required.
+	 * @param The input argument is a .properties file
+	 * @throws IOException
 	 */
-	public static void main(String[] args) {
-		// TODO: Make the argument a file.input and have all of the input defined there
-		// In the args we will have to specify the number of consumers, group id, and a topic for a set of consumers
-		// Or we can do a set of topics and with a single command we will spin off all of the consumers that will listen on their specific topic and partition
-		ConsumerRun runner = new ConsumerRun();
+	public static void main(String[] args) throws IOException {
+		// In the args input file we specify the number of consumers per topic, 
+		//	group id, and a list of topic for all sets of consumers
+    	if (args.length != 1) {
+    		System.out.println("USAGE: java -cp target/SeismicProject-X.X.X.jar "
+    				+ "main.java.consumer.ConsumerRun input/consumer.input.properties");
+    		System.exit(1);
+    	}
+    	
+    	Properties inputProps = new Properties();
+    	FileInputStream in = new FileInputStream(args[0]);
+    	inputProps.load(in);
+    	in.close();
+    	
+		ConsumerRun runner = new ConsumerRun(inputProps);
+		
 		runner.runConsumers();
 	}
 	
-	/*
-	 * runs the consumers desired by the user. Called directly by main().
+	/**
+	 * Runs the consumers desired by the user. Called directly by main().
 	 */
 	public void runConsumers()
 	{
-		int numConsumers = 3;
-		String groupId = "seismic-events";
-		
-		String topic = "test2";
-		final ExecutorService executor = Executors.newFixedThreadPool(numConsumers);
-		final List<ConsumerKafka> consumers = new ArrayList<>();
-		for (int i = 0; i < numConsumers; i++) {
-			ConsumerKafka consumer = new ConsumerKafka(i, groupId, topic);
-			consumers.add(consumer);
-			executor.submit(consumer);
+		for (String topic : allTopics) {
+			for (Integer singleNumConsumers : allNumConsumers) {
+				final ExecutorService executor = Executors.newFixedThreadPool(singleNumConsumers);
+				final List<ConsumerKafka> consumers = new ArrayList<>();
+
+				for (int i = 0; i < singleNumConsumers; i++) {
+					ConsumerKafka consumer = new ConsumerKafka(i, groupId, topic);
+					consumers.add(consumer);
+					executor.submit(consumer);
+				}
+				executors.add(executor);
+			}
 		}
 	}
 }
