@@ -130,7 +130,7 @@ public class ConsumerKafka implements Runnable, Serializable {
 				if (seismicDataList.size() % (sampleRate * secPerWindow) == 0) {
 					// Make sure we are not overwriting existing windows in cache
 					// have the thread busy wait until we can put a new window
-					while (streamCache.get(tid + "_" + windowNum) != null) {
+					while (streamCache.get(tid + "-" + windowNum) != null) {
 					/*
 						System.out.printf("tid = %d, there is data in Ignite cache "
 								+ "associated with window number = %d, i = %d\n", tid, windowNum, i);
