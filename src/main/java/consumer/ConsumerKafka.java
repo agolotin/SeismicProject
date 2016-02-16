@@ -6,9 +6,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.MutableEntry;
-
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -21,7 +18,6 @@ import main.java.streaming.ignite.server.MeasurementInfo;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.stream.StreamTransformer;
 
 @SuppressWarnings({"unchecked", "rawtypes", "serial"})
 public class ConsumerKafka implements Runnable, Serializable {
@@ -85,23 +81,6 @@ public class ConsumerKafka implements Runnable, Serializable {
 					ignite.getOrCreateCache(IgniteCacheConfig.timeseriesCache(topic));
 			IgniteDataStreamer<String, List<MeasurementInfo>> dataStreamer = 
 					ignite.dataStreamer(streamCache.getName());
-			
-			// For some reason we have to overwrite the value of 
-			//	what's being put into cache...otherwise it doesn't work
-			// TESTME: Try get rid of these next 15 or so lines and test Ignite query
-			dataStreamer.allowOverwrite(true);
-			
-			dataStreamer.receiver(new StreamTransformer<String, List<MeasurementInfo>>() {
-
-				@Override
-				public Object process(MutableEntry<String, List<MeasurementInfo>> e, Object... arg)
-						throws EntryProcessorException {
-					
-					e.setValue((List<MeasurementInfo>) arg[0]);
-					
-					return null;
-				}
-            });
 			
 			// TODO: This will have to be a command line parameter...probably
 			Integer secPerWindow = 5;
