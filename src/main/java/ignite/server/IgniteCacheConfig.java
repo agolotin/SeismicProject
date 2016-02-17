@@ -1,4 +1,4 @@
-package main.java.streaming.ignite.server;
+package main.java.ignite.server;
 
 //TODO: Remove commented code if unneeded
 //import javax.cache.configuration.Factory;

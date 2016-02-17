@@ -19,7 +19,7 @@ import edu.iris.dmc.service.*;
 import edu.iris.dmc.timeseries.model.Segment;
 import edu.iris.dmc.timeseries.model.Timeseries;
 
-/*
+/**
  * ProducerKafka requests the data stream from the IRIS database and 
  * partitions the streams to the KafkaConsumers, which then send the 
  * data to the Ignite Server caches
@@ -33,7 +33,6 @@ public class ProducerKafka {
 	private final KafkaProducer producer;
     
    	/**
-   	 * 
    	 * Entry point for KafkaProducer. 
    	 * Statically creates instance of the class and calls run function.
 	 * @param The input argument is a .properties file
@@ -188,9 +187,12 @@ public class ProducerKafka {
 		return data;
 	}
 
-	//Gets the data streams from IRIS, based on fields set up in the constructor.
-	//Returns a list of timeseries objects with the data.
-	private List<Timeseries> getIrisMessage() throws IOException {
+	/**
+	 * Gets the data streams from IRIS, based on fields set up in the constructor.
+	 * @return Returns a list of timeseries objects with the data.
+	 * @throws IOException
+	 */
+	public List<Timeseries> getIrisMessage() throws IOException {
 		ServiceUtil serviceUtil = ServiceUtil.getInstance();
 		serviceUtil.setAppName("SeismicEventsData");
 		WaveformService waveformService = serviceUtil.getWaveformService();

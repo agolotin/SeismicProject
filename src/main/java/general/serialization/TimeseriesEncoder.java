@@ -13,7 +13,7 @@ import com.esotericsoftware.kryo.serializers.JavaSerializer;
 import main.java.general.timeseries.SegmentCustom;
 import main.java.general.timeseries.TimeseriesCustom;
 
-/*
+/**
  * In order to use the TimeseriesCustom class to pass data from the ProducerKafka
  * to the ConsumerKafka, we need a custom Serializer and a custom Deserializer.
  * This TimeseriesEncoder is the custom Serializer, used to Serialize timeseries 
@@ -23,8 +23,7 @@ public class TimeseriesEncoder implements Serializer<TimeseriesCustom> {
 	
 	public TimeseriesEncoder() { }
 	
-	/*
-	 * (non-Javadoc)
+	/**
 	 * @see org.apache.kafka.common.serialization.Serializer#serialize(java.lang.String, java.lang.Object)
 	 * @param arg0
 	 * @param ts

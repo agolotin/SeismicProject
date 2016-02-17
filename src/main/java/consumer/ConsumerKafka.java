@@ -13,8 +13,8 @@ import org.apache.kafka.common.TopicPartition;
 
 import main.java.general.timeseries.SegmentCustom;
 import main.java.general.timeseries.TimeseriesCustom;
-import main.java.streaming.ignite.server.IgniteCacheConfig;
-import main.java.streaming.ignite.server.MeasurementInfo;
+import main.java.ignite.server.IgniteCacheConfig;
+import main.java.ignite.server.MeasurementInfo;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.IgniteConfiguration;

@@ -9,8 +9,10 @@ import java.util.List;
 import edu.iris.dmc.fdsn.station.model.Channel;
 import edu.iris.dmc.timeseries.model.Segment;
 
-/* Google Kryo does not serialize the java.util.login.Logger that is present in both Timeseries and Segment classes
- * This class almost fully implements the functionality of the Timseries class defined by IRIS libraries in order to 
+/**
+ * The reason we have to create our own Timeseries and Segment classes is because Google Kryo (or anything)
+ * does not serialize the java.util.login.Logger that is present in both Timeseries and Segment classes.
+ * This class almost fully implements the functionality of the Timseries class defined by IRIS library in order to 
  * allow us to control serialization of the logger.
  */
 @SuppressWarnings("serial")
@@ -19,15 +21,12 @@ public class TimeseriesCustom extends java.lang.Object implements java.io.Serial
 	public TimeseriesCustom() {
 	}
 
-	/*
+	/**
 	 * Constructor with the necessary fields
 	 * 
 	 * @param networkCode
-	 * 
 	 * @param stationCode
-	 * 
 	 * @param location
-	 * 
 	 * @param channelCode
 	 */
 	public TimeseriesCustom(String networkCode, String stationCode, String location, String channelCode) {

@@ -5,7 +5,7 @@ import java.util.List;
 
 import edu.iris.dmc.timeseries.model.Segment;
 
-/*
+/**
  * Segment class to go with our implementation of the Timeseries class.
  */
 @SuppressWarnings({ "rawtypes", "serial" })

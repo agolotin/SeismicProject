@@ -1,4 +1,4 @@
-package main.java.consumer;
+package main.java.ignite.process;
 
 //TODO: these commented imports can probably be removed
 //import java.util.Map.Entry;
@@ -13,8 +13,8 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 
-import main.java.streaming.ignite.server.IgniteCacheConfig;
-import main.java.streaming.ignite.server.MeasurementInfo;
+import main.java.ignite.server.IgniteCacheConfig;
+import main.java.ignite.server.MeasurementInfo;
 
 //import org.apache.ignite.binary.BinaryObject;
 //import org.apache.ignite.cache.query.QueryCursor;
