@@ -47,14 +47,20 @@ public class IgniteCacheConfig
 		CacheConfiguration<String, List<MeasurementInfo>> config = new 
 				CacheConfiguration<String, List<MeasurementInfo>>("seismic-data-" + topic);
 		
-		// Index individual measurements
-		config.setIndexedTypes(String.class, List.class);
+		// Index individual measurements ->	throws an error if values are stored off heap. we cannot index off heap values
+		// config.setIndexedTypes(String.class, List.class);
 		// Set the amount of time we want our entries to persist in cache
 		config.setExpiryPolicyFactory(FactoryBuilder.factoryOf(new CreatedExpiryPolicy(new Duration(TimeUnit.HOURS, 5))));
 		// Make sure the cache is partitioned over multiple nodes
 		config.setCacheMode(CacheMode.PARTITIONED);
 		// This allows multiple ignite clinets that run on the same machine to concurrently write to cache
 		config.setAtomicWriteOrderMode(CacheAtomicWriteOrderMode.PRIMARY);
+		// This memory mode stored keys on heap and values off heap. Good for large keys and small values
+		config.setMemoryMode(CacheMemoryMode.OFFHEAP_VALUES);
+		// 0 means unlimited memory
+		config.setOffHeapMaxMemory(0); 
+		// Enable swap space storage
+		// config.setSwapEnabled(true);  // TODO: Configure swap spi on server... or client, not sure which one
 		/*
 		// Configure cache types. 
         Collection<CacheTypeMetadata> meta = new ArrayList<>();

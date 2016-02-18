@@ -87,7 +87,7 @@ public class ConsumerKafka implements Runnable, Serializable {
 
 			while (true) {
 				ConsumerRecords<String, TimeseriesCustom> records = consumer.poll(Long.MAX_VALUE);
-				this.sendData(records, streamCache, dataStreamer, secPerWindow);
+				this.streamDataToCache(records, streamCache, dataStreamer, secPerWindow);
 				// Make sure the data that did not get send to the cache was sent
 				dataStreamer.flush();
 			}
@@ -104,7 +104,7 @@ public class ConsumerKafka implements Runnable, Serializable {
 	// Loops through list of records and for each record
 	// breaks the data up into measurements, then sends the
 	// measurements to the Ignite cache
-	private void sendData(ConsumerRecords<String, TimeseriesCustom> records, IgniteCache<String, List<MeasurementInfo>> streamCache, 
+	private void streamDataToCache(ConsumerRecords<String, TimeseriesCustom> records, IgniteCache<String, List<MeasurementInfo>> streamCache, 
 			IgniteDataStreamer<String, List<MeasurementInfo>> dataStreamer, Integer secPerWindow) {
 
 		for (ConsumerRecord record : records) {
