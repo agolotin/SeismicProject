@@ -14,6 +14,8 @@ import java.util.*;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 
+import com.google.common.primitives.Floats;
+
 import edu.iris.dmc.criteria.*;  
 import edu.iris.dmc.service.*;
 import edu.iris.dmc.timeseries.model.Segment;
@@ -123,30 +125,39 @@ public class ProducerKafka {
 		
 		for (Segment segment : timeseries.getSegments()) {
 			
-			List data = this.discoverMeasurementList(segment);
+			long endTime, startTime = segment.getStartTime().getTime(); // This will return time in milliseconds
+			long millisecondsPerPartition = (long) (((segment.getSampleCount() / segment.getSamplerate()) * 1000) / numPartitions);
+			
+			float[] data = this.discoverMeasurementData(segment);
 			// TODO: What if there are multiple types of data in multiple lists...
 			
 			// Get the number of samples this segment holds and figure out how many sends to send to a partition
 			// TODO: Check that the number of samples we are sending is divisible by the number of partitions
-			//Double seconds = Double.valueOf(segment.getSampleCount()) / segment.getSamplerate();
-			Double samplesPerPartition = segment.getSampleCount() / Double.valueOf(numPartitions);
+			int samplesPerPartition = segment.getSampleCount() / numPartitions;
 			
 			for (int partitionNum = 0; partitionNum < numPartitions; partitionNum++) {
+				// Get the end time for the chunk
+				endTime = startTime + millisecondsPerPartition;
 				
+				// Create a new timeseries custom object that will be serialized and passed to consumer
 				TimeseriesCustom ts = new TimeseriesCustom(timeseries.getNetworkCode(), timeseries.getStationCode(), 
 						timeseries.getLocation(), timeseries.getChannelCode());
-				
 				ts.setChannel(timeseries.getChannel());
 				ts.setDataQuality(timeseries.getDataQuality());
 				
-				List measurementsPerPartition = new ArrayList();
-				for (int k = (int) (samplesPerPartition * partitionNum); 
-						k < samplesPerPartition * (partitionNum + 1); k++) {
-					
-					measurementsPerPartition.add(data.get(k));
-				}
+				// Put a chunk of data into a separate array according to its partition
+				float[] measurementsPerPartition = new float[samplesPerPartition];
 				
-				ts.setSegment(segment, measurementsPerPartition);
+				// Copy over a chunk of the main array to the array that we are sending
+				System.arraycopy(data, samplesPerPartition * partitionNum, 
+						measurementsPerPartition, 0, samplesPerPartition);
+				
+				// Finally, set the segment data for the timeseries object
+				ts.setSegment(measurementsPerPartition, samplesPerPartition, segment.getType(),
+						segment.getSamplerate(), startTime, endTime);
+				
+				// Switch the end and start time together for the next message
+				startTime = endTime;
 				
 				// Send to topic @topic, partition is @partitionNum, key is null, and data is @ts
 				ProducerRecord<String, TimeseriesCustom> producerData = 
@@ -156,15 +167,14 @@ public class ProducerKafka {
 		}
 		
 	}
-
 	
 	/**
 	 * This function discovers what type of data a segment holds and returns it as a generic list
 	 * @param single_segment
 	 * @return data associated with that segment
 	 */
-	private List discoverMeasurementList(Segment single_segment) {
-		List data = null;
+	private float[] discoverMeasurementData(Segment single_segment) {
+		List<? extends Number> data = null;
 
 		switch(single_segment.getType()) {
 			case DOUBLE:
@@ -183,8 +193,10 @@ public class ProducerKafka {
 				data = single_segment.getShortData();
 				break;
 		}
+		// Now convert whatever data we have to float
+		float[] mainData = Floats.toArray(data);
 		
-		return data;
+		return mainData;
 	}
 
 	/**

@@ -1,14 +1,13 @@
 package main.java.general.timeseries;
 
 import java.sql.Timestamp;
-import java.util.List;
 
 import edu.iris.dmc.timeseries.model.Segment;
 
 /**
  * Segment class to go with our implementation of the Timeseries class.
  */
-@SuppressWarnings({ "rawtypes", "serial" })
+@SuppressWarnings("serial")
 public class SegmentCustom extends java.lang.Object implements java.io.Serializable {
 
 	/*
@@ -38,80 +37,31 @@ public class SegmentCustom extends java.lang.Object implements java.io.Serializa
 	//private List<Short> shortData;
 
 	// Once we discover what type of data we have, we just put it in a generic list
-	private List mainData;
+	private float[] mainData;
 
 	// TODO: Consumer these times are not necessarily be
 	// correct per consumer, so don't rely on them
 	// To fix you need to go to ProducerKafka and make sure that when
 	// you are sending data you override the timestamps
-	private Timestamp startTime;
-	private Timestamp endTime;
+	private long startTime;
+	private long endTime;
 	private Timestamp expectedNextSampleTime;
 	private int sampleCount;
 
-	// =========================== ||
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((endTime == null) ? 0 : endTime.hashCode());
+		result = prime * result + (int) (endTime ^ (endTime >>> 32));
 		result = prime * result + ((expectedNextSampleTime == null) ? 0 : expectedNextSampleTime.hashCode());
+		result = prime * result + ((mainData == null) ? 0 : mainData.hashCode());
+		result = prime * result + sampleCount;
 		result = prime * result + Float.floatToIntBits(sampleRate);
-		result = prime * result + ((startTime == null) ? 0 : startTime.hashCode());
+		result = prime * result + (int) (startTime ^ (startTime >>> 32));
 		result = prime * result + ((type == null) ? 0 : type.hashCode());
 		return result;
 	}
 
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
-			return true;
-		}
-		if (obj == null) {
-			return false;
-		}
-		if (getClass() != obj.getClass()) {
-			return false;
-		}
-		SegmentCustom other = (SegmentCustom) obj;
-		if (endTime == null) {
-			if (other.endTime != null) {
-				return false;
-			}
-		}
-		else {
-			if (!endTime.equals(other.endTime)) {
-				return false;
-			}
-		}
-		if (expectedNextSampleTime == null) {
-			if (other.expectedNextSampleTime != null) {
-				return false;
-			}
-		}
-		else {
-			if (!expectedNextSampleTime.equals(other.expectedNextSampleTime)) {
-				return false;
-			}
-		}
-		if (Float.floatToIntBits(sampleRate) != Float.floatToIntBits(other.sampleRate)) {
-			return false;
-		}
-		if (startTime == null) {
-			if (other.startTime != null) {
-				return false;
-			}
-		}
-		else {
-			if (!startTime.equals(other.startTime)) {
-				return false;
-			}
-		}
-		if (type != other.type) {
-			return false;
-		}
-		return true;
-	}
 
 	@Override
 	public String toString() {
@@ -127,11 +77,11 @@ public class SegmentCustom extends java.lang.Object implements java.io.Serializa
 		return sampleRate;
 	}
 
-	public Timestamp getStartTime() {
+	public long getStartTime() {
 		return startTime;
 	}
 
-	public Timestamp getEndTime() {
+	public long getEndTime() {
 		return endTime;
 	}
 
@@ -143,7 +93,7 @@ public class SegmentCustom extends java.lang.Object implements java.io.Serializa
 		return sampleCount;
 	}
 
-	public List getMainData() {
+	public float[] getMainData() {
 		return mainData;
 	}
 
@@ -155,12 +105,44 @@ public class SegmentCustom extends java.lang.Object implements java.io.Serializa
 		this.sampleRate = sampleRate;
 	}
 
-	public void setStartTime(Timestamp startTime) {
+	public void setStartTime(long startTime) {
 		this.startTime = startTime;
 	}
 
-	public void setEndTime(Timestamp timestamp) {
-		this.endTime = timestamp;
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		SegmentCustom other = (SegmentCustom) obj;
+		if (endTime != other.endTime)
+			return false;
+		if (expectedNextSampleTime == null) {
+			if (other.expectedNextSampleTime != null)
+				return false;
+		} else if (!expectedNextSampleTime.equals(other.expectedNextSampleTime))
+			return false;
+		if (mainData == null) {
+			if (other.mainData != null)
+				return false;
+		} else if (!mainData.equals(other.mainData))
+			return false;
+		if (sampleCount != other.sampleCount)
+			return false;
+		if (Float.floatToIntBits(sampleRate) != Float.floatToIntBits(other.sampleRate))
+			return false;
+		if (startTime != other.startTime)
+			return false;
+		if (type != other.type)
+			return false;
+		return true;
+	}
+
+	public void setEndTime(long endTime) {
+		this.endTime = endTime;
 	}
 
 	public void setExpectedNextSampleTime(Timestamp expectedNextSampleTime) {
@@ -171,8 +153,8 @@ public class SegmentCustom extends java.lang.Object implements java.io.Serializa
 		this.sampleCount = sampleCount;
 	}
 
-	public void setMainData(List mainData) {
-		this.mainData = mainData;
+	public void setMainData(float[] measurementsPerPartition) {
+		this.mainData = measurementsPerPartition;
 	}
 
 }

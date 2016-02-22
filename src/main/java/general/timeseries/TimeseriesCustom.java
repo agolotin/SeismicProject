@@ -4,8 +4,6 @@ package main.java.general.timeseries;
 //import java.sql.Timestamp;
 //import java.util.ArrayList;
 //import java.util.Collection;
-import java.util.List;
-
 import edu.iris.dmc.fdsn.station.model.Channel;
 import edu.iris.dmc.timeseries.model.Segment;
 
@@ -121,22 +119,17 @@ public class TimeseriesCustom extends java.lang.Object implements java.io.Serial
 	 * 
 	 * @param measurementsPerPartition
 	 */
-	public void setSegment(Segment segment, List<?> measurementsPerPartition) {
-		// TODO: this method has commented code we likely won't need
-		// for (Segment s : segments) {
-		SegmentCustom sc = new SegmentCustom(segment.getType(), segment.getSamplerate());
-		// sc.setDoubleData(s.getDoubleData());
-		// sc.setFloatData(s.getFloatData());
-		// sc.setShortData(s.getShortData());
-		// sc.setIntegerData(measurementsPerPartition);
+	public void setSegment(float[] measurementsPerPartition, int numSamples, Segment.Type type, 
+			float samplerate, long startTime, long endTime) {
+		SegmentCustom sc = new SegmentCustom(type, samplerate);
+		
 		sc.setMainData(measurementsPerPartition); /// this is the main data
-		sc.setSampleCount(segment.getSampleCount());
-		sc.setType(segment.getType());
-		sc.setEndTime(segment.getEndTime());
-		sc.setExpectedNextSampleTime(segment.getExpectedNextSampleTime());
-		sc.setStartTime(segment.getStartTime());
-		// public SegmentCustom(Segment.Type type, float sampleRate) {
-		// }
+		sc.setSampleCount(numSamples);
+		sc.setType(type);
+		sc.setEndTime(endTime);
+		//sc.setExpectedNextSampleTime(segment.getExpectedNextSampleTime());
+		sc.setStartTime(startTime);
+		
 		this.segment = sc;
 	}
 

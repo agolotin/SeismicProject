@@ -3,18 +3,19 @@ package main.java.ignite.process;
 //TODO: these commented imports can probably be removed
 //import java.util.Map.Entry;
 //import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.io.IOException;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CachePeekMode;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cluster.ClusterGroup;
 
 import main.java.ignite.server.IgniteCacheConfig;
-import main.java.ignite.server.MeasurementInfo;
+import main.java.signalprocessing.CorrelationDetector;
+import main.java.signalprocessing.DetectionStatistic;
+import main.java.signalprocessing.StreamProducer;
 
 //import org.apache.ignite.binary.BinaryObject;
 //import org.apache.ignite.cache.query.QueryCursor;
@@ -53,45 +54,83 @@ public class IgniteQuery {
 	 * Starts an Ignite client, formats a general SQL query, and repeatedly queries
 	 * all matching rows from the cache. These rows are printed to the console and
 	 * deleted from the cache.  
+	 * @throws IOException 
 	 */
-	public void runQuery() {
+	public void runQuery() throws IOException {
 		// Mark this cluster member as client.
 		Ignition.setClientMode(true);
 
 		try (Ignite ignite = Ignition.start()) {
 			
-			IgniteCache<String, List<MeasurementInfo>> streamCache = ignite
+			final IgniteCache<String, StreamProducer> streamCache = ignite
 					.getOrCreateCache(IgniteCacheConfig.timeseriesCache(topic));
+/*
+			// Actual signal processing code... 
+			DetectorHolder detectors = new DetectorHolder();
 
-			// Select all of the entries for a single window depending on the
-			// window number
-			//SqlFieldsQuery query = new SqlFieldsQuery("select _key, _val from measurementinfo where "
-			//		+ "measurementinfo.windownum = ? and measurementinfo.tid = ?");
+			int blockSizeSamps = CorrelationDetector.BLOCK_SIZE;
+            StreamProducer stream = new StreamProducer(blockSizeSamps);
+            double streamStart = stream.getStartTime();
+
+			StreamSegment previous = null;
+
+			while (stream.hasNext()) {
+				
+			   StreamSegment segment = stream.getNext();
+			   System.out.println(segment.getStartTime());
+			   
+			   if (previous != null) {
+			      StreamSegment combined = StreamSegment.combine(segment, previous);
+			      
+			      for (CorrelationDetector detector : detectors.getDetectors()) {
+			         if (detector.isCompatibleWith(combined)) {
+					   DetectionStatistic statistic = detector.produceStatistic(combined);
+					   writeStatistic( detector, statistic, streamStart);
+			         }
+			      }
+			   }
+			   previous = segment;
+			}
+
+			
+			
+			
+			
+			
+
+			ClusterGroup remotes = ignite.cluster().forRemotes();
+			IgniteCompute compute = ignite.compute(remotes);
+
+			for (int key = 0; key < Integer.MAX_VALUE; key++) {
+			    // This closure will execute on the remote node where
+			    // data with the 'key' is located.
+			    compute.affinityRun(streamCache.getName(), String.valueOf(consumerID + '-' + key), () -> { 
+			        // Peek is a local memory lookup.
+			    	System.out.println("Size of local cache: " + streamCache.size(CachePeekMode.NEAR));
+			    });
+			}
+*/
 
 			int i = 0;
 			while (true) {
 				// Execute queries.
 
 				System.out.println("Size of cache = " + streamCache.size(CachePeekMode.ALL) + "; i = " + i);
-				List<MeasurementInfo> rs = streamCache.getAndRemove(consumerID + "-" + i);
+				StreamProducer rs = streamCache.getAndRemove(String.valueOf(i));
 				System.out.println(rs);
 				i++;
-//				List<List<?>> result = streamCache.query(query.setArgs(i, consumerID)).getAll();
-//
-//				if (!result.isEmpty()) {
-//					Set<String> toDelete = new HashSet<String>();
-//					for (List<?> l : result) {
-//						toDelete.add((String) l.get(0));
-//					}
-//					streamCache.removeAll(toDelete);
-//					i++;
-//				}
-//
+				
 				Thread.sleep(1000);
 			}
 		}
 		catch (InterruptedException e) {
 
 		}
+			/*
+			*/
+	}
+
+	private void writeStatistic(CorrelationDetector detector, DetectionStatistic statistic, double streamStart) {
+		// TODO: Implement this method....
 	}
 }

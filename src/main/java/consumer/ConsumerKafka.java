@@ -1,9 +1,7 @@
 package main.java.consumer;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Properties;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -14,7 +12,8 @@ import org.apache.kafka.common.TopicPartition;
 import main.java.general.timeseries.SegmentCustom;
 import main.java.general.timeseries.TimeseriesCustom;
 import main.java.ignite.server.IgniteCacheConfig;
-import main.java.ignite.server.MeasurementInfo;
+import main.java.signalprocessing.StreamIdentifier;
+import main.java.signalprocessing.StreamProducer;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -25,7 +24,12 @@ public class ConsumerKafka implements Runnable, Serializable {
 	private final KafkaConsumer consumer;
     private final String topic;
     private final int tid;
+    
+	// TODO: This will have to be a command line parameter...probably
+    private final double sampleInterval;
+    private StreamIdentifier id;
 
+    /* I am trying to integrate StreamProducer and ConsumerKafka into one class... kind of */
     public ConsumerKafka(int tid, String group_id, String topic) {
     	this.tid = tid;
     	this.topic = topic;
@@ -41,6 +45,9 @@ public class ConsumerKafka implements Runnable, Serializable {
         props.put("value.deserializer", "main.java.general.serialization.TimeseriesDecoder");
         
         consumer = new KafkaConsumer<>(props);
+        
+        // REVIEWME: if I'm understanding it correctly, this will set up the sample interval to be 5 seconds in milliseconds...
+        sampleInterval = 5000;
     }
     
     /**
@@ -68,26 +75,24 @@ public class ConsumerKafka implements Runnable, Serializable {
         	//	we need to specify different names for them
         	conf.setGridName(String.valueOf("Grid" + tid + "-" + topic));
         	
-        	// REVIEWME: Review what communication spi does...
-        	//TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
-        	//commSpi.setLocalAddress("localhost");
-        	//commSpi.setLocalPortRange(100);
+        	/* REVIEWME: Review what communication spi does...
+        	TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
+        	commSpi.setLocalAddress("localhost");
+        	commSpi.setLocalPortRange(100);
         	
-        	//conf.setCommunicationSpi(commSpi);
+        	conf.setCommunicationSpi(commSpi);
+        	*/
         	conf.setClientMode(true);
         	Ignite ignite = Ignition.start(conf);
         	
-			IgniteCache<String, List<MeasurementInfo>> streamCache = 
+			IgniteCache<String, StreamProducer> streamCache = 
 					ignite.getOrCreateCache(IgniteCacheConfig.timeseriesCache(topic));
-			IgniteDataStreamer<String, List<MeasurementInfo>> dataStreamer = 
+			IgniteDataStreamer<String, StreamProducer> dataStreamer = 
 					ignite.dataStreamer(streamCache.getName());
 			
-			// TODO: This will have to be a command line parameter...probably
-			Integer secPerWindow = 5;
-
 			while (true) {
 				ConsumerRecords<String, TimeseriesCustom> records = consumer.poll(Long.MAX_VALUE);
-				this.streamDataToCache(records, streamCache, dataStreamer, secPerWindow);
+				this.streamDataToCache(records, streamCache, dataStreamer);
 				// Make sure the data that did not get send to the cache was sent
 				dataStreamer.flush();
 			}
@@ -104,47 +109,36 @@ public class ConsumerKafka implements Runnable, Serializable {
 	// Loops through list of records and for each record
 	// breaks the data up into measurements, then sends the
 	// measurements to the Ignite cache
-	private void streamDataToCache(ConsumerRecords<String, TimeseriesCustom> records, IgniteCache<String, List<MeasurementInfo>> streamCache, 
-			IgniteDataStreamer<String, List<MeasurementInfo>> dataStreamer, Integer secPerWindow) {
+	private void streamDataToCache(ConsumerRecords<String, TimeseriesCustom> records, IgniteCache<String, StreamProducer> streamCache, 
+			IgniteDataStreamer<String, StreamProducer> dataStreamer) {
 
 		for (ConsumerRecord record : records) {
 			System.out.printf("Record topic = %s, partitoin number = %d, tid = %d\n", record.topic(), record.partition(), tid);
 			
 			// override the window number each time new consumer record comes in
-			Integer windowNum = 0; 
+			// Integer windowNum = 0; 
 		
 			TimeseriesCustom data = (TimeseriesCustom) record.value();
 			SegmentCustom segment = data.getSegment();
+			float[] mainData = segment.getMainData();
 			
-			// Overwrite the sample rate to be sure
-			final float sampleRate = segment.getSampleRate();
+			// An incoming stream might have a new id...
+			id = new StreamIdentifier(data.getNetworkCode(), data.getStationCode(), data.getChannelCode(), data.getLocation());
+			// Create a stream producer that will handle everything...
+			StreamProducer segmentDataStream = new StreamProducer(id, mainData, segment.getStartTime(), 
+					segment.getEndTime(), sampleInterval, segment.getSampleRate());
 			
-			List<MeasurementInfo> seismicDataList = new ArrayList<MeasurementInfo>();
-			List mainData = segment.getMainData();
-			
-			for (int pos = 0; pos < mainData.size(); pos++) {
-				// Add the new measurement to the list
-				seismicDataList.add(new MeasurementInfo(tid, windowNum, mainData.get(pos)));
-				
-				// If we have added enough data for a single window 
-				if (seismicDataList.size() % (sampleRate * secPerWindow) == 0) {
-					// Make sure we are not overwriting existing windows in cache
-					// have the thread busy wait until we can put a new window
-					while (streamCache.get(tid + "-" + windowNum) != null) {
-					/*
-						System.out.printf("tid = %d, there is data in Ignite cache "
-								+ "associated with window number = %d, i = %d\n", tid, windowNum, i);
-					*/
-					}
-					// Once we are sure the previous window with the same number was processed 
-					//	for that consumer, we put a new window with this number
-					dataStreamer.addData(String.valueOf(tid + "-" + windowNum), seismicDataList);
-					// Clear the list that contains all data for a single window
-					seismicDataList.clear();
-					// Increment the window number
-					windowNum++;
-				}
+			// Make sure we are not overwriting existing windows in cache
+			// have the thread busy wait until we can put a new window
+			while (streamCache.get(String.valueOf(tid)) != null) {
+			/*
+				System.out.printf("tid = %d, there is data in Ignite cache "
+						+ "associated with window number = %d, i = %d\n", tid, windowNum, i);
+			*/
 			}
+			// XXX: We need to figure out what is going to be the key for our cache...
+			dataStreamer.addData(String.valueOf(tid), segmentDataStream);
+			
 		}
 	}
     

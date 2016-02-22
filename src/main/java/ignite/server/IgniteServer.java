@@ -1,7 +1,12 @@
 package main.java.ignite.server;
 
+//import java.io.File;
+
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
+//import org.apache.ignite.configuration.IgniteConfiguration;
+//import org.springframework.context.ApplicationContext;
+//import org.springframework.context.support.ClassPathXmlApplicationContext;
 //TODO: Remove commented code if unneeded
 //import org.apache.ignite.configuration.IgniteConfiguration;
 //import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -19,7 +24,9 @@ public class IgniteServer
 	 */
 	public static void main(String[] args) 
 	{
-		// TODO: Add grid names to every single ignite instance
+		//ApplicationContext context = new ClassPathXmlApplicationContext("ignite.xml");
+		//IgniteConfiguration conf = (IgniteConfiguration) context.getBean("igniteConfig");
+		
 		try {
         //	IgniteConfiguration conf = new IgniteConfiguration();
 		//	
