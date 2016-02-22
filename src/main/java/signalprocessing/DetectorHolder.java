@@ -15,4 +15,8 @@ public class DetectorHolder {
 		return this.detectors;
 	}
 
+	public void add(List<CorrelationDetector> other_detectors) {
+		this.detectors.addAll(other_detectors);
+	}
+
 }

@@ -12,11 +12,16 @@ import org.apache.kafka.common.TopicPartition;
 import main.java.general.timeseries.SegmentCustom;
 import main.java.general.timeseries.TimeseriesCustom;
 import main.java.ignite.server.IgniteCacheConfig;
+import main.java.signalprocessing.CorrelationDetector;
+import main.java.signalprocessing.DetectionStatistic;
+import main.java.signalprocessing.DetectorHolder;
 import main.java.signalprocessing.StreamIdentifier;
 import main.java.signalprocessing.StreamProducer;
+import main.java.signalprocessing.StreamSegment;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.stream.StreamTransformer;
 
 @SuppressWarnings({"unchecked", "rawtypes", "serial"})
 public class ConsumerKafka implements Runnable, Serializable {
@@ -85,14 +90,26 @@ public class ConsumerKafka implements Runnable, Serializable {
         	conf.setClientMode(true);
         	Ignite ignite = Ignition.start(conf);
         	
-			IgniteCache<String, StreamProducer> streamCache = 
-					ignite.getOrCreateCache(IgniteCacheConfig.timeseriesCache(topic));
-			IgniteDataStreamer<String, StreamProducer> dataStreamer = 
+			IgniteCache<String, DetectorHolder> streamCache = 
+					ignite.getOrCreateCache(IgniteCacheConfig.detectorHolderCache());
+			IgniteDataStreamer<String, DetectorHolder> dataStreamer = 
 					ignite.dataStreamer(streamCache.getName());
+			
+			dataStreamer.allowOverwrite(true);
+			dataStreamer.receiver(StreamTransformer.from((e, arg) ->{ 
+				// e will be the key-value pair, and arg is the new incoming list (of size 1) of new things
+				// Get the detector holder for this key
+				System.out.println("Length of incoming arguments for stream transformer is NOT one: " + String.valueOf(arg.length != 1));
+				
+				DetectorHolder detections = e.getValue();
+				detections.add(((DetectorHolder) arg[0]).getDetectors());
+				
+				return null;
+			}));
 			
 			while (true) {
 				ConsumerRecords<String, TimeseriesCustom> records = consumer.poll(Long.MAX_VALUE);
-				this.streamDataToCache(records, streamCache, dataStreamer);
+				this.processIncomingData(records, streamCache, dataStreamer);
 				// Make sure the data that did not get send to the cache was sent
 				dataStreamer.flush();
 			}
@@ -105,12 +122,9 @@ public class ConsumerKafka implements Runnable, Serializable {
         }
     }
 	
-	// Sends data to the Ignite server for caching.
-	// Loops through list of records and for each record
-	// breaks the data up into measurements, then sends the
-	// measurements to the Ignite cache
-	private void streamDataToCache(ConsumerRecords<String, TimeseriesCustom> records, IgniteCache<String, StreamProducer> streamCache, 
-			IgniteDataStreamer<String, StreamProducer> dataStreamer) {
+	// Gets the stream of data and calculates detection statistic on it
+	private void processIncomingData(ConsumerRecords<String, TimeseriesCustom> records, IgniteCache<String, DetectorHolder> streamCache, 
+			IgniteDataStreamer<String, DetectorHolder> dataStreamer) {
 
 		for (ConsumerRecord record : records) {
 			System.out.printf("Record topic = %s, partitoin number = %d, tid = %d\n", record.topic(), record.partition(), tid);
@@ -119,30 +133,52 @@ public class ConsumerKafka implements Runnable, Serializable {
 			// Integer windowNum = 0; 
 		
 			TimeseriesCustom data = (TimeseriesCustom) record.value();
-			SegmentCustom segment = data.getSegment();
-			float[] mainData = segment.getMainData();
+			SegmentCustom timeseriesSegment = data.getSegment();
+			float[] mainData = timeseriesSegment.getMainData();
 			
 			// An incoming stream might have a new id...
 			id = new StreamIdentifier(data.getNetworkCode(), data.getStationCode(), data.getChannelCode(), data.getLocation());
 			// Create a stream producer that will handle everything...
-			StreamProducer segmentDataStream = new StreamProducer(id, mainData, segment.getStartTime(), 
-					segment.getEndTime(), sampleInterval, segment.getSampleRate());
+			StreamProducer segmentDataStream = new StreamProducer(id, mainData, timeseriesSegment.getStartTime(), 
+					timeseriesSegment.getEndTime(), sampleInterval, timeseriesSegment.getSampleRate());
+
 			
-			// Make sure we are not overwriting existing windows in cache
-			// have the thread busy wait until we can put a new window
-			while (streamCache.get(String.valueOf(tid)) != null) {
-			/*
-				System.out.printf("tid = %d, there is data in Ignite cache "
-						+ "associated with window number = %d, i = %d\n", tid, windowNum, i);
-			*/
+			// =========================================================== ||
+		   // XXX: Need to create a function for this that will make sure it 
+		   //	either takes stuff from cache or creates a new correlation detector
+			double streamStart = segmentDataStream.getStartTime();
+			StreamSegment previous = null;
+			// Actual calculation of detection statistics
+			while (segmentDataStream.hasNext()) {
+				
+			   StreamSegment segment = segmentDataStream.getNext();
+			   System.out.println(segment.getStartTime());
+			   
+			   if (previous != null) {
+			      StreamSegment combined = StreamSegment.combine(segment, previous);
+			      streamStart = previous.getStartTime(); // FIXME: Is this right?
+			      
+			      // FIXME: make sure there's something in cache at all
+			      for (CorrelationDetector detector : streamCache.get(segmentDataStream.toString()).getDetectors()) { 
+			         if (detector.isCompatibleWith(combined)) {
+					   DetectionStatistic statistic = detector.produceStatistic(combined);
+					   writeStatistic( detector, statistic, streamStart);
+					   // Put stuff into cache...
+			         }
+			      }
+			   }
+			   previous = segment;
 			}
-			// XXX: We need to figure out what is going to be the key for our cache...
-			dataStreamer.addData(String.valueOf(tid), segmentDataStream);
+			// =========================================================== ||
 			
 		}
 	}
     
-    public void shutdown() {
+    private void writeStatistic(CorrelationDetector detector, DetectionStatistic statistic, double streamStart) {
+		// TODO: Implement this method
+	}
+
+	public void shutdown() {
         consumer.wakeup();
     }
 }

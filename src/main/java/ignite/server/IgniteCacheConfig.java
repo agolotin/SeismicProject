@@ -1,16 +1,17 @@
 package main.java.ignite.server;
 
-import javax.cache.configuration.FactoryBuilder;
-import javax.cache.expiry.CreatedExpiryPolicy;
-import javax.cache.expiry.Duration;
+//import javax.cache.configuration.FactoryBuilder;
+//import javax.cache.expiry.CreatedExpiryPolicy;
+//import javax.cache.expiry.Duration;
 
-import main.java.signalprocessing.StreamProducer;
+import main.java.signalprocessing.DetectorHolder;
+//import main.java.signalprocessing.StreamProducer;
 
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.cache.*;
 
-import java.util.concurrent.*;
+//import java.util.concurrent.*;
 
 /**
  * IgniteCacheConfig provides the configuration for the Ignite caches
@@ -27,15 +28,18 @@ public class IgniteCacheConfig
 	 * @param there are multiple caches, specifically one cache per topic (or station that we are pulling data from)
 	 * @return new instance of the cache or the current instance of cache depending on a topic
 	 */
-	public static CacheConfiguration<String, StreamProducer> timeseriesCache(String topic) 
+	public static CacheConfiguration<String, DetectorHolder> detectorHolderCache() 
 	{
-		CacheConfiguration<String, StreamProducer> config = new 
-				CacheConfiguration<String, StreamProducer>("seismic-data-" + topic);
+		CacheConfiguration<String, DetectorHolder> config = new 
+				CacheConfiguration<String, DetectorHolder>("detectors");
 		
 		// Index individual measurements ->	throws an error if values are stored off heap. we cannot index off heap values
-		// config.setIndexedTypes(String.class, StreamProducer.class);
+		// config.setIndexedTypes(String.class, DetectorHolder.class);
 		// Set the amount of time we want our entries to persist in cache
-		config.setExpiryPolicyFactory(FactoryBuilder.factoryOf(new CreatedExpiryPolicy(new Duration(TimeUnit.HOURS, 5))));
+		// config.setExpiryPolicyFactory(FactoryBuilder.factoryOf(new CreatedExpiryPolicy(new Duration(TimeUnit.HOURS, 5))));
+		// NOTE: If we don't set up the expiry policy, everything will be in cache always
+		
+		
 		// Make sure the cache is partitioned over multiple nodes
 		config.setCacheMode(CacheMode.PARTITIONED);
 		// This allows multiple ignite clients that run on the same machine to concurrently write to cache

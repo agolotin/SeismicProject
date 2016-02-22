@@ -62,9 +62,9 @@ public class IgniteQuery {
 
 		try (Ignite ignite = Ignition.start()) {
 			
+/*
 			final IgniteCache<String, StreamProducer> streamCache = ignite
 					.getOrCreateCache(IgniteCacheConfig.timeseriesCache(topic));
-/*
 			// Actual signal processing code... 
 			DetectorHolder detectors = new DetectorHolder();
 
@@ -109,7 +109,6 @@ public class IgniteQuery {
 			    	System.out.println("Size of local cache: " + streamCache.size(CachePeekMode.NEAR));
 			    });
 			}
-*/
 
 			int i = 0;
 			while (true) {
@@ -126,11 +125,8 @@ public class IgniteQuery {
 		catch (InterruptedException e) {
 
 		}
-			/*
-			*/
+*/
+		}
 	}
 
-	private void writeStatistic(CorrelationDetector detector, DetectionStatistic statistic, double streamStart) {
-		// TODO: Implement this method....
-	}
 }
