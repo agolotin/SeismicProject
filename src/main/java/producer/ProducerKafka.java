@@ -125,8 +125,8 @@ public class ProducerKafka {
 		
 		for (Segment segment : timeseries.getSegments()) {
 			
-			long endTime, startTime = segment.getStartTime().getTime(); // This will return time in milliseconds
-			long millisecondsPerPartition = (long) (((segment.getSampleCount() / segment.getSamplerate()) * 1000) / numPartitions);
+			long endTime, startTime = segment.getStartTime().getTime() / 1000; // This will return time in milliseconds
+			long secondsPerPartition = (long) ((segment.getSampleCount() / segment.getSamplerate()) / numPartitions);
 			
 			float[] data = this.discoverMeasurementData(segment);
 			// TODO: What if there are multiple types of data in multiple lists...
@@ -137,7 +137,7 @@ public class ProducerKafka {
 			
 			for (int partitionNum = 0; partitionNum < numPartitions; partitionNum++) {
 				// Get the end time for the chunk
-				endTime = startTime + millisecondsPerPartition;
+				endTime = startTime + secondsPerPartition;
 				
 				// Create a new timeseries custom object that will be serialized and passed to consumer
 				TimeseriesCustom ts = new TimeseriesCustom(timeseries.getNetworkCode(), timeseries.getStationCode(), 

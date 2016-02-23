@@ -52,7 +52,7 @@ public class ConsumerKafka implements Runnable, Serializable {
         consumer = new KafkaConsumer<>(props);
         
         // REVIEWME: if I'm understanding it correctly, this will set up the sample interval to be 5 seconds in milliseconds...
-        sampleInterval = 5000;
+        sampleInterval = 5;
     }
     
     /**
