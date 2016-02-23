@@ -4,8 +4,10 @@ import java.util.Arrays;
 
 public class StreamSegment {
 
-	private final double startTime; // This is milliseconds !! 
-    private final double sampleInterval; // REVIEWME: This is milliseconds..... ?
+	/// REVIEWME: Are the start time and sample interval in seconds or milliseconds? 
+	///				Right now the program assumes milliseconds, but it will probably fail...
+	private final double startTime;  
+    private final double sampleInterval; 
     private final float[] data;
     private final StreamIdentifier id;
 

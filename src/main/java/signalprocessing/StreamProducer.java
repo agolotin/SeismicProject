@@ -1,6 +1,7 @@
 package main.java.signalprocessing;
 
-import main.java.butterworth.Butterworth;
+import com.oregondsp.signalProcessing.filter.iir.Butterworth;
+import com.oregondsp.signalProcessing.filter.iir.PassbandType;
 
 
 public class StreamProducer {
@@ -23,17 +24,14 @@ public class StreamProducer {
 		//SACFile longData = new SACFile(longFile);
 		//SACHeader dataHeader = longData.getHeader();
     	
-    	// FIXME: I'm not sure I changed that I've made are correct...
-    	
-		// REVIEWME: A lot of things in this function were modified by me.. So it's really worth checking
-		int dataLength = mainData.length;//dataHeader.npts;
+		int dataLength = mainData.length;//dataHeader.npts; REVIEWME: I'm assuming data length is the size of our full stream
 		this.startTime = startTime;//dataHeader.getReferenceTime();
-		//double dt = 1.0/ Math.round(1.0 / dataHeader.delta);
+		//double dt = 1.0/ Math.round(1.0 / dataHeader.delta); REVIEWME: From what I understand, delta in our case is our sample interval (secods per block)
 		
 		this.sampleInterval = sampleInterval;//dt;
 		this.dataArray = mainData;//longData.getData();
 
-		// REVIEWME: I am assuming we will determine the size of a block depending on the interval and sample rate
+		// REVIEWME: I am assuming the way we calculate the size of a block is seconds per block times sample rate
 		this.blockSizeSamps = (int) (sampleInterval * sampleRate);//blockSizeSamps;
 
 		this.numBlocks = dataLength / blockSizeSamps;
@@ -45,6 +43,7 @@ public class StreamProducer {
 		int order = 4;
 		float lowCorner = 2;
 		float highCorner = 8;
+		
 		filter = new Butterworth(order, PassbandType.BANDPASS, lowCorner, highCorner, sampleInterval);
 
     }

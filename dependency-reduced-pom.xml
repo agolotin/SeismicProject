@@ -34,13 +34,6 @@
       </plugin>
     </plugins>
   </build>
-  <repositories>
-    <repository>
-      <id>project.local</id>
-      <name>project</name>
-      <url>file://${project.basedir}/libraries</url>
-    </repository>
-  </repositories>
   <properties>
     <ignite.version>1.5.0.final</ignite.version>
     <maven.compiler.source>1.8</maven.compiler.source>

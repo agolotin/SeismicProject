@@ -47,8 +47,9 @@
             </plugin>            
 
         </plugins>      
-    </build>
+	</build>
 
+	<!-- if some of the build fails, uncomment this out
     <repositories>
         <repository>
             <id>project.local</id>
@@ -56,6 +57,7 @@
             <url>file://${project.basedir}/libraries</url>
         </repository>
     </repositories>
+	-->
 
     <dependencies>
         <!-- A lot of dependencies are listed as "provided" which means you must 
@@ -70,11 +72,16 @@
             <version>0.9.0.0</version>
         </dependency>
 
-        <!-- Non Big Data Libraries -->
         <dependency>
             <groupId>edu.iris</groupId>
             <artifactId>IRIS-WS</artifactId>
             <version>2.0.15</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.oregondsp</groupId>
+			<artifactId>signalProcessing</artifactId>
+			<version>1</version>
 		</dependency>
 
 		<dependency>

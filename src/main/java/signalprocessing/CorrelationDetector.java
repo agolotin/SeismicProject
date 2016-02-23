@@ -4,7 +4,7 @@ package main.java.signalprocessing;
 public class CorrelationDetector {
 
 	// FIXME: What do I do with block size...
-	public final int BLOCK_SIZE = 72000;
+	public static final int BLOCK_SIZE = 72000;
     private final double templateAutoCorrelation;
 
 	private final float[] templateData;
@@ -15,10 +15,12 @@ public class CorrelationDetector {
 //    public CorrelationDetector(SACFile sacTemplate, StreamIdentifier id, double startSecond, double duration) {
     public CorrelationDetector(StreamIdentifier id, double startSecond, double duration) {
 
-    	// FIXME: What do I do with delta...
+    	// REVIEWME: I'm not sure what in this case delta should represent... is it sample interval as well?
         double dt = Double.MAX_VALUE;//sacTemplate.getHeader().delta;
-        int offset = (int)Math.round(startSecond / dt);
-        int npts = (int)Math.round(duration / dt);
+        int offset = (int) Math.round(startSecond / dt);
+        int npts = (int) Math.round(duration / dt);
+        
+        // REVIEWME: What does tmpArray suppose to hold? Is it the data block that we are computing our detection statistic against or is it data within a detector? 
         float[] tmpArray = new float[Float.MAX_EXPONENT];//sacTemplate.getData();
         templateData = new float[npts];
         
@@ -31,7 +33,8 @@ public class CorrelationDetector {
         templateAutoCorrelation = tmp;
 
         this.streamId = id;
-        this.detectorid = Integer.MAX_VALUE; //FIXME: What do I do with detectorid...
+        this.detectorid = Integer.MAX_VALUE; 
+        // REVIEWME: The next line... What is detectoridSequence? I couldn't find it anywhere
         // detectorid = ++ detectoridSequence; 
     }
     

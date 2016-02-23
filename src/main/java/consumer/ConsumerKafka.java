@@ -163,7 +163,7 @@ public class ConsumerKafka implements Runnable, Serializable {
 			         if (detector.isCompatibleWith(combined)) {
 					   DetectionStatistic statistic = detector.produceStatistic(combined);
 					   writeStatistic( detector, statistic, streamStart);
-					   // Put stuff into cache...
+					   // Put stuff into cache instead
 			         }
 			      }
 			   }
