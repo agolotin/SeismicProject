@@ -101,10 +101,14 @@ public class ConsumerKafka implements Runnable, Serializable {
 				// Get the detector holder for this key
 				System.out.println("Length of incoming arguments for stream transformer is NOT one: " + String.valueOf(arg.length != 1));
 				
-				DetectorHolder detections = e.getValue();
-				detections.add(((DetectorHolder) arg[0]).getDetectors());
+				DetectorHolder detectors = e.getValue();
+				if (detectors == null) {
+					detectors = new DetectorHolder();
+				}
 				
-				return null;
+				detectors.add(((DetectorHolder) arg[0]).getDetectors());
+				
+				return null; // This function should not really return anything
 			}));
 			
 			while (true) {
@@ -136,14 +140,14 @@ public class ConsumerKafka implements Runnable, Serializable {
 			SegmentCustom timeseriesSegment = data.getSegment();
 			float[] mainData = timeseriesSegment.getMainData();
 			
-			// An incoming stream might have a new id...
+			// An incoming stream might have a new id
 			id = new StreamIdentifier(data.getNetworkCode(), data.getStationCode(), data.getChannelCode(), data.getLocation());
-			// Create a stream producer that will handle everything...
+			// Create a stream producer that will handle everything
 			StreamProducer segmentDataStream = new StreamProducer(id, mainData, timeseriesSegment.getStartTime(), 
 					timeseriesSegment.getEndTime(), sampleInterval, timeseriesSegment.getSampleRate());
 
 			
-			// =========================================================== ||
+			// =========================================================== || Here comes the fun part...
 		   // XXX: Need to create a function for this that will make sure it 
 		   //	either takes stuff from cache or creates a new correlation detector
 			double streamStart = segmentDataStream.getStartTime();
