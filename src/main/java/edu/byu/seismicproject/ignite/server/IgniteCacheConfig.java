@@ -1,11 +1,12 @@
-package main.java.ignite.server;
+package main.java.edu.byu.seismicproject.ignite.server;
 
 //import javax.cache.configuration.FactoryBuilder;
 //import javax.cache.expiry.CreatedExpiryPolicy;
 //import javax.cache.expiry.Duration;
 
-import main.java.signalprocessing.DetectorHolder;
+import main.java.edu.byu.seismicproject.signalprocessing.DetectorHolder;
 //import main.java.signalprocessing.StreamProducer;
+
 
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;

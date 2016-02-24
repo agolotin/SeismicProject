@@ -1,4 +1,4 @@
-package main.java.signalprocessing;
+package main.java.edu.byu.seismicproject.signalprocessing;
 
 import java.util.Arrays;
 
@@ -18,6 +18,7 @@ public class StreamSegment {
         this.data = data;
     }
 
+    // TODO: Finish logic here based on the comment
     private boolean isCompatible(StreamSegment other) {
     	// Should verify compatible (possibly not identical) sample intervals and end time of 
     	//	first is one sample less than start time of second. At least be sure the IDs match.
@@ -65,6 +66,20 @@ public class StreamSegment {
 	}
 	
     // ========================== ||
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + Arrays.hashCode(data);
+		result = prime * result + ((id == null) ? 0 : id.hashCode());
+		long temp;
+		temp = Double.doubleToLongBits(sampleInterval);
+		result = prime * result + (int) (temp ^ (temp >>> 32));
+		temp = Double.doubleToLongBits(startTime);
+		result = prime * result + (int) (temp ^ (temp >>> 32));
+		return result;
+	}
 
 	@Override
 	public boolean equals(Object obj) {

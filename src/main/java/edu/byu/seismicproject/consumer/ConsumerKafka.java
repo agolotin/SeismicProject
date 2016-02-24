@@ -1,4 +1,4 @@
-package main.java.consumer;
+package main.java.edu.byu.seismicproject.consumer;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -9,15 +9,15 @@ import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.TopicPartition;
 
-import main.java.general.timeseries.SegmentCustom;
-import main.java.general.timeseries.TimeseriesCustom;
-import main.java.ignite.server.IgniteCacheConfig;
-import main.java.signalprocessing.CorrelationDetector;
-import main.java.signalprocessing.DetectionStatistic;
-import main.java.signalprocessing.DetectorHolder;
-import main.java.signalprocessing.StreamIdentifier;
-import main.java.signalprocessing.StreamProducer;
-import main.java.signalprocessing.StreamSegment;
+import main.java.edu.byu.seismicproject.general.timeseries.SegmentCustom;
+import main.java.edu.byu.seismicproject.general.timeseries.TimeseriesCustom;
+import main.java.edu.byu.seismicproject.ignite.server.IgniteCacheConfig;
+import main.java.edu.byu.seismicproject.signalprocessing.CorrelationDetector;
+import main.java.edu.byu.seismicproject.signalprocessing.DetectionStatistic;
+import main.java.edu.byu.seismicproject.signalprocessing.DetectorHolder;
+import main.java.edu.byu.seismicproject.signalprocessing.StreamIdentifier;
+import main.java.edu.byu.seismicproject.signalprocessing.StreamProducer;
+import main.java.edu.byu.seismicproject.signalprocessing.StreamSegment;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -99,10 +99,12 @@ public class ConsumerKafka implements Runnable, Serializable {
 			dataStreamer.receiver(StreamTransformer.from((e, arg) ->{ 
 				// e will be the key-value pair, and arg is the new incoming list (of size 1) of new things
 				// Get the detector holder for this key
-				System.out.println("Length of incoming arguments for stream transformer is NOT one: " + String.valueOf(arg.length != 1));
+				System.out.println("Length of incoming arguments for stream "
+						+ "transformer is NOT one: " + String.valueOf(arg.length != 1));
 				
 				DetectorHolder detectors = e.getValue();
 				if (detectors == null) {
+					// TODO: Add more things to detector holder...
 					detectors = new DetectorHolder();
 				}
 				

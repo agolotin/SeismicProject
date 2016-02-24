@@ -1,4 +1,4 @@
-package main.java.general.timeseries;
+package main.java.edu.byu.seismicproject.general.timeseries;
 
 import java.sql.Timestamp;
 

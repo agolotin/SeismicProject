@@ -1,5 +1,4 @@
-package main.java.signalprocessing;
-
+package main.java.edu.byu.seismicproject.signalprocessing;
 
 public class CorrelationDetector {
 

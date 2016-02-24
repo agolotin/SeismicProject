@@ -1,4 +1,4 @@
-package main.java.ignite.process;
+package main.java.edu.byu.seismicproject.ignite.process;
 
 //TODO: these commented imports can probably be removed
 //import java.util.Map.Entry;
@@ -12,10 +12,10 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterGroup;
 
-import main.java.ignite.server.IgniteCacheConfig;
-import main.java.signalprocessing.CorrelationDetector;
-import main.java.signalprocessing.DetectionStatistic;
-import main.java.signalprocessing.StreamProducer;
+import main.java.edu.byu.seismicproject.ignite.server.IgniteCacheConfig;
+import main.java.edu.byu.seismicproject.signalprocessing.CorrelationDetector;
+import main.java.edu.byu.seismicproject.signalprocessing.DetectionStatistic;
+import main.java.edu.byu.seismicproject.signalprocessing.StreamProducer;
 
 //import org.apache.ignite.binary.BinaryObject;
 //import org.apache.ignite.cache.query.QueryCursor;

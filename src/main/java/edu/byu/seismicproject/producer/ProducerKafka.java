@@ -1,4 +1,4 @@
-package main.java.producer;
+package main.java.edu.byu.seismicproject.producer;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -6,7 +6,8 @@ import java.util.List;
 import java.util.Properties;
 
 import kafka.common.TopicExistsException;
-import main.java.general.timeseries.TimeseriesCustom;
+import main.java.edu.byu.seismicproject.general.timeseries.TimeseriesCustom;
+import main.java.edu.byu.seismicproject.producer.ProducerKafka;
 
 import java.text.*;
 import java.util.*;
@@ -125,7 +126,7 @@ public class ProducerKafka {
 		
 		for (Segment segment : timeseries.getSegments()) {
 			
-			long endTime, startTime = segment.getStartTime().getTime() / 1000; // This will return time in milliseconds
+			long endTime, startTime = segment.getStartTime().getTime() / 1000; // This will return time in seconds
 			long secondsPerPartition = (long) ((segment.getSampleCount() / segment.getSamplerate()) / numPartitions);
 			
 			float[] data = this.discoverMeasurementData(segment);

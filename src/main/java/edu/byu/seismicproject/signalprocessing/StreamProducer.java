@@ -1,4 +1,4 @@
-package main.java.signalprocessing;
+package main.java.edu.byu.seismicproject.signalprocessing;
 
 import com.oregondsp.signalProcessing.filter.iir.Butterworth;
 import com.oregondsp.signalProcessing.filter.iir.PassbandType;

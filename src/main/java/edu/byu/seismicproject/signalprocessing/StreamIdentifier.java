@@ -1,4 +1,4 @@
-package main.java.signalprocessing;
+package main.java.edu.byu.seismicproject.signalprocessing;
 
 
 public class StreamIdentifier {
@@ -34,6 +34,17 @@ public class StreamIdentifier {
 	@Override
 	public String toString() {
 		return "StreamIdentifier [net=" + net + ", sta=" + sta + ", chan=" + chan + ", location=" + location + "]";
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((chan == null) ? 0 : chan.hashCode());
+		result = prime * result + ((location == null) ? 0 : location.hashCode());
+		result = prime * result + ((net == null) ? 0 : net.hashCode());
+		result = prime * result + ((sta == null) ? 0 : sta.hashCode());
+		return result;
 	}
 
 	@Override

@@ -1,9 +1,5 @@
-package main.java.general.timeseries;
+package main.java.edu.byu.seismicproject.general.timeseries;
 
-//TODO: these commented imports likely won't be needed
-//import java.sql.Timestamp;
-//import java.util.ArrayList;
-//import java.util.Collection;
 import edu.iris.dmc.fdsn.station.model.Channel;
 import edu.iris.dmc.timeseries.model.Segment;
 

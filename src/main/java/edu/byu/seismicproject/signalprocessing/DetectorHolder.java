@@ -1,4 +1,4 @@
-package main.java.signalprocessing;
+package main.java.edu.byu.seismicproject.signalprocessing;
 
 import java.util.ArrayList;
 import java.util.List;
