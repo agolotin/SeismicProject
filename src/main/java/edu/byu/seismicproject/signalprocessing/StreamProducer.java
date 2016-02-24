@@ -17,22 +17,22 @@ public class StreamProducer {
     private final StreamIdentifier id;
     
 	public StreamProducer(StreamIdentifier id, float[] mainData, long startTime, long endTime, 
-    		double sampleInterval, float sampleRate) {
+			int secondsPerBlock, float sampleRate) {
 
     	//We are getting our data from a SAC file. Read SAC file entirely, 
     	//	but process it in 72000-sample-long blocks to simulate the way the real system processes data...
 		//SACFile longData = new SACFile(longFile);
 		//SACHeader dataHeader = longData.getHeader();
     	
-		int dataLength = mainData.length;//dataHeader.npts; REVIEWME: I'm assuming data length is the size of our full stream
-		this.startTime = startTime;//dataHeader.getReferenceTime();
-		//double dt = 1.0/ Math.round(1.0 / dataHeader.delta); REVIEWME: From what I understand, delta in our case is our sample interval (secods per block)
+		int dataLength = mainData.length;// REVIEWME: I'm assuming data length is the size of our full stream
+		this.startTime = startTime;
+		//double dt = 1.0/ Math.round(1.0 / dataHeader.delta); 
 		
-		this.sampleInterval = sampleInterval;//dt;
+		// NOTE: https://courses.engr.illinois.edu/ece110/content/courseNotes/files/?samplingAndQuantization#SAQ-SMP
+		this.sampleInterval = 1.0 / sampleRate;
 		this.dataArray = mainData;//longData.getData();
 
-		// REVIEWME: I am assuming the way we calculate the size of a block is seconds per block times sample rate
-		this.blockSizeSamps = (int) (sampleInterval * sampleRate);//blockSizeSamps;
+		this.blockSizeSamps = (int) (secondsPerBlock * sampleRate);//blockSizeSamps;
 
 		this.numBlocks = dataLength / blockSizeSamps;
 		this.currentBlock = 0;

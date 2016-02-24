@@ -31,7 +31,7 @@ public class ConsumerKafka implements Runnable, Serializable {
     private final int tid;
     
 	// TODO: This will have to be a command line parameter...probably
-    private final double sampleInterval;
+    private double blockSize;
     private StreamIdentifier id;
 
     /* I am trying to integrate StreamProducer and ConsumerKafka into one class... kind of */
@@ -50,9 +50,6 @@ public class ConsumerKafka implements Runnable, Serializable {
         props.put("value.deserializer", "main.java.general.serialization.TimeseriesDecoder");
         
         consumer = new KafkaConsumer<>(props);
-        
-        // REVIEWME: if I'm understanding it correctly, this will set up the sample interval to be 5 seconds in milliseconds...
-        sampleInterval = 5;
     }
     
     /**
@@ -141,12 +138,13 @@ public class ConsumerKafka implements Runnable, Serializable {
 			TimeseriesCustom data = (TimeseriesCustom) record.value();
 			SegmentCustom timeseriesSegment = data.getSegment();
 			float[] mainData = timeseriesSegment.getMainData();
+			final int secondsPerBlock = 5;
 			
 			// An incoming stream might have a new id
 			id = new StreamIdentifier(data.getNetworkCode(), data.getStationCode(), data.getChannelCode(), data.getLocation());
 			// Create a stream producer that will handle everything
 			StreamProducer segmentDataStream = new StreamProducer(id, mainData, timeseriesSegment.getStartTime(), 
-					timeseriesSegment.getEndTime(), sampleInterval, timeseriesSegment.getSampleRate());
+					timeseriesSegment.getEndTime(), secondsPerBlock, timeseriesSegment.getSampleRate());
 
 			
 			// =========================================================== || Here comes the fun part...
