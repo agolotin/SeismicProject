@@ -9,14 +9,11 @@ import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.TopicPartition;
 
-import main.java.edu.byu.seismicproject.general.timeseries.SegmentCustom;
-import main.java.edu.byu.seismicproject.general.timeseries.TimeseriesCustom;
 import main.java.edu.byu.seismicproject.ignite.server.IgniteCacheConfig;
 import main.java.edu.byu.seismicproject.signalprocessing.CorrelationDetector;
 import main.java.edu.byu.seismicproject.signalprocessing.DetectionStatistic;
 import main.java.edu.byu.seismicproject.signalprocessing.DetectorHolder;
 import main.java.edu.byu.seismicproject.signalprocessing.StreamIdentifier;
-import main.java.edu.byu.seismicproject.signalprocessing.StreamProducer;
 import main.java.edu.byu.seismicproject.signalprocessing.StreamSegment;
 
 import org.apache.ignite.*;
@@ -43,11 +40,11 @@ public class ConsumerKafka implements Runnable, Serializable {
         Properties props = new Properties();
         props.put("bootstrap.servers", "localhost:9092");
         props.put("group.id", group_id);
-        props.put("enable.auto.commit", "true");
+        props.put("enable.auto.commit", "false");
         props.put("auto.commit.interval.ms", "1000");
         props.put("session.timeout.ms", "30000");
-        props.put("key.deserializer", "main.java.general.serialization.TimeseriesDecoder");
-        props.put("value.deserializer", "main.java.general.serialization.TimeseriesDecoder");
+        props.put("key.deserializer", "main.java.edu.byu.seismicproject.general.serialization.StreamSegmentDecoder");
+        props.put("value.deserializer", "main.java.edu.byu.seismicproject.general.serialization.StreamSegmentDecoder");
         
         consumer = new KafkaConsumer<>(props);
     }
@@ -70,7 +67,7 @@ public class ConsumerKafka implements Runnable, Serializable {
         	
         	// Have consumer listen on a specific topic partition
         	consumer.assign(Arrays.asList(par));
-        	consumer.seekToEnd(par);
+        	consumer.seekToEnd(par); 
         	
         	IgniteConfiguration conf = new IgniteConfiguration();
         	// Since multiple consumers will be running on a single node, 
@@ -101,19 +98,22 @@ public class ConsumerKafka implements Runnable, Serializable {
 				
 				DetectorHolder detectors = e.getValue();
 				if (detectors == null) {
-					// TODO: Add more things to detector holder...
 					detectors = new DetectorHolder();
 				}
 				
-				detectors.add(((DetectorHolder) arg[0]).getDetectors());
+				// TODO: Add more things to detector holder...
+				for (Object detector : arg)
+					detectors.add(((DetectorHolder) detector).getDetectors());
 				
 				return null; // This function should not really return anything
 			}));
 			
+			//
 			while (true) {
-				ConsumerRecords<String, TimeseriesCustom> records = consumer.poll(Long.MAX_VALUE);
+				// XXX: If a consumer fails, we lose all of the data that was polled
+				ConsumerRecords<String, StreamSegment> records = consumer.poll(Long.MAX_VALUE);
 				this.processIncomingData(records, streamCache, dataStreamer);
-				// Make sure the data that did not get send to the cache was sent
+				// Make sure the data that was not get send to the cache was sent
 				dataStreamer.flush();
 			}
         }
@@ -126,22 +126,27 @@ public class ConsumerKafka implements Runnable, Serializable {
     }
 	
 	// Gets the stream of data and calculates detection statistic on it
-	private void processIncomingData(ConsumerRecords<String, TimeseriesCustom> records, IgniteCache<String, DetectorHolder> streamCache, 
+	private void processIncomingData(ConsumerRecords<String, StreamSegment> records, IgniteCache<String, DetectorHolder> streamCache, 
 			IgniteDataStreamer<String, DetectorHolder> dataStreamer) {
 
 		for (ConsumerRecord record : records) {
 			System.out.printf("Record topic = %s, partitoin number = %d, tid = %d\n", record.topic(), record.partition(), tid);
 			
-			// override the window number each time new consumer record comes in
-			// Integer windowNum = 0; 
+			StreamSegment segment = (StreamSegment) record.value();
+			System.out.println("tid = " + tid + ", " + segment.toString());
+			try {
+				Thread.sleep(2500);
+			} catch (InterruptedException e) { }
 		
+			/*
 			TimeseriesCustom data = (TimeseriesCustom) record.value();
 			SegmentCustom timeseriesSegment = data.getSegment();
 			float[] mainData = timeseriesSegment.getMainData();
 			final int secondsPerBlock = 5;
 			
 			// An incoming stream might have a new id
-			id = new StreamIdentifier(data.getNetworkCode(), data.getStationCode(), data.getChannelCode(), data.getLocation());
+			// XXX: Seismic band is null right now, don't do that....
+			id = new StreamIdentifier(data.getNetworkCode(), data.getStationCode(), data.getChannelCode(), data.getLocation(), null);
 			// Create a stream producer that will handle everything
 			StreamProducer segmentDataStream = new StreamProducer(id, mainData, timeseriesSegment.getStartTime(), 
 					timeseriesSegment.getEndTime(), secondsPerBlock, timeseriesSegment.getSampleRate());
@@ -175,6 +180,7 @@ public class ConsumerKafka implements Runnable, Serializable {
 			}
 			// =========================================================== ||
 			
+			*/
 		}
 	}
     

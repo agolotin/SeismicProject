@@ -7,30 +7,25 @@ import com.oregondsp.signalProcessing.filter.iir.PassbandType;
 public class StreamProducer {
 
     private final Butterworth filter;
-    private final float[] dataArray;
     private final int blockSizeSamps;
     private final int numBlocks;
     private int currentBlock;
 
-    private final double startTime;
+    private final long startTime;
     private final double sampleInterval;
     private final StreamIdentifier id;
     
-	public StreamProducer(StreamIdentifier id, float[] mainData, long startTime, long endTime, 
-			int secondsPerBlock, float sampleRate) {
+    private final StreamSegment[] filteredDataBlocks;
+    
+	public StreamProducer(StreamIdentifier id, float[] rawData, 
+							long startTime, long endTime, 
+							int secondsPerBlock, float sampleRate) {
 
-    	//We are getting our data from a SAC file. Read SAC file entirely, 
-    	//	but process it in 72000-sample-long blocks to simulate the way the real system processes data...
-		//SACFile longData = new SACFile(longFile);
-		//SACHeader dataHeader = longData.getHeader();
-    	
-		int dataLength = mainData.length;// REVIEWME: I'm assuming data length is the size of our full stream
+		int dataLength = rawData.length;
 		this.startTime = startTime;
-		//double dt = 1.0/ Math.round(1.0 / dataHeader.delta); 
 		
 		// NOTE: https://courses.engr.illinois.edu/ece110/content/courseNotes/files/?samplingAndQuantization#SAQ-SMP
-		this.sampleInterval = 1.0 / sampleRate;
-		this.dataArray = mainData;//longData.getData();
+		this.sampleInterval = 1.0 / sampleRate; // this is how much seconds there are per sample
 
 		this.blockSizeSamps = (int) (secondsPerBlock * sampleRate);//blockSizeSamps;
 
@@ -40,37 +35,50 @@ public class StreamProducer {
 		this.id = id;
 		
 		// Set up IIR filter that will be used to filter all data blocks into the 2-8 Hz band
-		int order = 4;
-		float lowCorner = 2;
-		float highCorner = 8;
+		int order = id.getBand().getOrder();
+		double lowCorner = id.getBand().getLowCorner();
+		double highCorner = id.getBand().getHighCorner();
 		
 		filter = new Butterworth(order, PassbandType.BANDPASS, lowCorner, highCorner, sampleInterval);
 
+		filteredDataBlocks = new StreamSegment[numBlocks];
+		createFilteredBlocksFromRawData(rawData);
     }
+	
+	
+	/**
+	 * This function generates a list of StreamIdentifier blocks that will be processed by 
+	 * the Ignite client. This is done in order for us to discard the raw data and keep only the
+	 * filtered data stream in blocks
+	 * FIXME: Make sure we are setting the start and end time here correctly....it seems like we are not...
+	 * @param rawData raw data stream of incoming data
+	 */
+	private void createFilteredBlocksFromRawData(float[] rawData) {
+		for (int i = 0; i < numBlocks; i++) {
+			
+			float[] block = new float[blockSizeSamps];
+			int offset = blockSizeSamps * i;
+			System.arraycopy(rawData, offset, block, 0, blockSizeSamps);
+			
+			// Filter new data block
+			filter.filter(block);
+			
+			// TODO: make sure this double to long conversion won't screw things up
+			long blockStartTime = startTime + (long) (offset * sampleInterval); 
+			long blockEndTime = startTime + (long) ((blockSizeSamps * (i+1)) * sampleInterval);
+			filteredDataBlocks[i] = new StreamSegment(id, blockStartTime, blockEndTime, sampleInterval, block);
+		}
+	}
     
     public boolean hasNext() {
         return currentBlock < numBlocks - 1;
     }
 
 	public StreamSegment getNext() {
-		float[] block = new float[blockSizeSamps];
-		int offset = blockSizeSamps * currentBlock++;
-		System.arraycopy(dataArray, offset, block, 0, blockSizeSamps);
-				
-		// Filter new data block
-		filter.filter(block);
-		return new StreamSegment(id, startTime + offset * sampleInterval, sampleInterval, block);
+		return filteredDataBlocks[currentBlock++];
 	}
 	
     
-	public Butterworth getFilter() {
-		return filter;
-	}
-
-	public float[] getDataArray() {
-		return dataArray;
-	}
-
 	public int getBlockSizeSamps() {
 		return blockSizeSamps;
 	}

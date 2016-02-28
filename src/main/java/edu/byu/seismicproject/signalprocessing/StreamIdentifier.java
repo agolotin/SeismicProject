@@ -1,45 +1,58 @@
 package main.java.edu.byu.seismicproject.signalprocessing;
 
+import java.io.Serializable;
 
-public class StreamIdentifier {
+import main.java.edu.byu.seismicproject.general.band.SeismicBand;
+
+
+@SuppressWarnings("serial")
+public class StreamIdentifier implements Serializable{
 
 	private final String net;
     private final String sta;
     private final String chan;
     private final String location;
+    private final SeismicBand band;
 
-    public StreamIdentifier(String net, String sta, String chan, String location) {
+    public StreamIdentifier(String net, String sta, String chan, String location, SeismicBand band) {
         this.net = net;
         this.sta = sta;
         this.chan = chan;
         this.location = location;
+        this.band = band;
     }
 
-	public String getNet() {
+	public String getNetwork() {
 		return net;
 	}
 
-	public String getSta() {
+	public String getStation() {
 		return sta;
 	}
 
-	public String getChan() {
+	public String getChannel() {
 		return chan;
 	}
 
 	public String getLocation() {
 		return location;
 	}
+	
+	public SeismicBand getBand() {
+		return band;
+	}
 
 	@Override
 	public String toString() {
-		return "StreamIdentifier [net=" + net + ", sta=" + sta + ", chan=" + chan + ", location=" + location + "]";
+		return "StreamIdentifier [net=" + net + ", sta=" + sta + ", chan=" + chan + ", location=" + location
+				+ ", band=" + band + "]";
 	}
 
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
+		result = prime * result + ((band == null) ? 0 : band.hashCode());
 		result = prime * result + ((chan == null) ? 0 : chan.hashCode());
 		result = prime * result + ((location == null) ? 0 : location.hashCode());
 		result = prime * result + ((net == null) ? 0 : net.hashCode());
@@ -56,6 +69,11 @@ public class StreamIdentifier {
 		if (getClass() != obj.getClass())
 			return false;
 		StreamIdentifier other = (StreamIdentifier) obj;
+		if (band == null) {
+			if (other.band != null)
+				return false;
+		} else if (!band.equals(other.band))
+			return false;
 		if (chan == null) {
 			if (other.chan != null)
 				return false;

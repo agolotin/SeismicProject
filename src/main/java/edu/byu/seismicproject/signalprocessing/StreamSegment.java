@@ -1,31 +1,54 @@
 package main.java.edu.byu.seismicproject.signalprocessing;
 
+import java.io.Serializable;
 import java.util.Arrays;
 
-public class StreamSegment {
+@SuppressWarnings("serial")
+public class StreamSegment implements Serializable {
 
 	/// REVIEWME: Are the start time and sample interval in seconds or milliseconds? 
-	///				Right now the program assumes milliseconds, but it will probably fail...
-	private final double startTime;  
+	///				Right now the program assumes seconds
+	private final long startTime;  
+	private final long endTime;
     private final double sampleInterval; 
     private final float[] data;
     private final StreamIdentifier id;
 
-    public StreamSegment(StreamIdentifier id, double startTime, double sampleInterval, float[] data) {
+    public StreamSegment(StreamIdentifier id, long startTime, long endTime, double sampleInterval, float[] data) {
         this.id = id;
         this.startTime = startTime;
+        this.endTime = endTime;
         this.sampleInterval = sampleInterval;
         this.data = data;
     }
 
-    // TODO: Finish logic here based on the comment
+    // TODO: Make sure all the logic is correct here
     private boolean isCompatible(StreamSegment other) {
     	// Should verify compatible (possibly not identical) sample intervals and end time of 
-    	//	first is one sample less than start time of second. At least be sure the IDs match.
-        return this.id.equals(other.id);
+    	//	first is one sample less than start time of second.
+    	
+    	// The IDs have to be the same for streams to be compatible
+        if (!this.id.equals(other.id)) 
+        	return false;
+        // The bands also have to be the same for streams to be compatible... just double checking
+        if (!this.id.getBand().equals(other.getId().getBand())) 
+        	return false;
+        if (this.endTime != (other.startTime)) // make sure this check is the same as described above...
+        	return false;
+        
+        if (this.equals(other)) // If the streams are exactly the same it's bad...right?
+        	return false;
+        
+        return true;
     }
     
-    public static StreamSegment combine(StreamSegment segment1, StreamSegment segment2) {
+    @Override
+	public String toString() {
+		return "StreamSegment [startTime=" + startTime + ", endTime=" + endTime + ", sampleInterval=" + sampleInterval
+				+ ", blockSize = " + data.length + ", id=" + id + "]";
+	}
+
+	public static StreamSegment combine(StreamSegment segment1, StreamSegment segment2) {
     	if (!segment1.isCompatible(segment2)) {
     	   throw new IllegalStateException("Segments are incompatible!");
     	}
@@ -44,7 +67,7 @@ public class StreamSegment {
 
         //Copy new block into position 0
     	System.arraycopy(block1, 0, combinedBlock, 0, blockSizeSamps);
-    	return new StreamSegment(segment1.id, segment1.startTime, segment1.sampleInterval, combinedBlock);
+    	return new StreamSegment(segment1.id, segment1.startTime, segment2.endTime, segment1.sampleInterval, combinedBlock);
     }
 
     // ======== GETTERS ========= ||
