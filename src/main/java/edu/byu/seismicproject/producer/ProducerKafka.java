@@ -7,7 +7,6 @@ import java.util.Properties;
 
 import kafka.common.TopicExistsException;
 import main.java.edu.byu.seismicproject.general.band.SeismicBand;
-import main.java.edu.byu.seismicproject.general.timeseries.TimeseriesCustom;
 import main.java.edu.byu.seismicproject.producer.ProducerKafka;
 import main.java.edu.byu.seismicproject.signalprocessing.StreamIdentifier;
 import main.java.edu.byu.seismicproject.signalprocessing.StreamProducer;
@@ -19,7 +18,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerRecord;
 
 import com.google.common.primitives.Floats;
 
@@ -33,7 +31,7 @@ import edu.iris.dmc.timeseries.model.Timeseries;
  * partitions the streams to the KafkaConsumers, which then send the 
  * data to the Ignite Server caches
  */
-@SuppressWarnings({ "unchecked", "rawtypes" })
+@SuppressWarnings("rawtypes")
 public class ProducerKafka {
 
 	private final String topic;

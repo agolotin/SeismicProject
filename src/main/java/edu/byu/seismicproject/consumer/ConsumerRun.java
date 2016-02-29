@@ -20,6 +20,7 @@ public class ConsumerRun {
 	private final Integer[] allNumConsumers;
 	private final String[] allTopics;
 	private final String groupId;
+	private final String externalOffsetStorage;
 	
 	// Just in case we need to keep track of executors
 	private final List<ExecutorService> executors;
@@ -39,6 +40,8 @@ public class ConsumerRun {
 		}
 		
 		groupId = (String) inputProps.get("groupid");
+		
+		externalOffsetStorage = (String) inputProps.get("offsetStorageName");
 		
 		executors = new ArrayList<ExecutorService>();
 	}
@@ -78,7 +81,7 @@ public class ConsumerRun {
 				final List<ConsumerKafka> consumers = new ArrayList<>();
 
 				for (int i = 0; i < singleNumConsumers; i++) {
-					ConsumerKafka consumer = new ConsumerKafka(i, groupId, topic);
+					ConsumerKafka consumer = new ConsumerKafka(i, groupId, topic, externalOffsetStorage);
 					consumers.add(consumer);
 					executor.submit(consumer);
 				}

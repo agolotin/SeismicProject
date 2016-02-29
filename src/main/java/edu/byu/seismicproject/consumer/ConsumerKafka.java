@@ -22,6 +22,8 @@ import org.apache.ignite.stream.StreamTransformer;
 
 @SuppressWarnings({"unchecked", "rawtypes", "serial"})
 public class ConsumerKafka implements Runnable, Serializable {
+	
+	private OffsetManager offsetManager;
 
 	private final KafkaConsumer consumer;
     private final String topic;
@@ -32,9 +34,10 @@ public class ConsumerKafka implements Runnable, Serializable {
     private StreamIdentifier id;
 
     /* I am trying to integrate StreamProducer and ConsumerKafka into one class... kind of */
-    public ConsumerKafka(int tid, String group_id, String topic) {
+    public ConsumerKafka(int tid, String group_id, String topic, String externalOffsetStorage) {
     	this.tid = tid;
     	this.topic = topic;
+    	offsetManager = new OffsetManager(externalOffsetStorage, tid);
 
         // Set up the consumer
         Properties props = new Properties();
@@ -63,11 +66,14 @@ public class ConsumerKafka implements Runnable, Serializable {
         // org.apache.log4j.BasicConfigurator.configure();
 
         try {
-        	TopicPartition par = new TopicPartition(topic, tid);
+        	// Let's try to implement a dynamic consumer with rebalance
+        	consumer.subscribe(Arrays.asList(topic), 
+        			new EventConsumerRebalanceListener(consumer, offsetManager.getStorageName(), tid));
         	
         	// Have consumer listen on a specific topic partition
-        	consumer.assign(Arrays.asList(par));
-        	consumer.seekToEnd(par); 
+        	//TopicPartition par = new TopicPartition(topic, tid);
+        	//consumer.assign(Arrays.asList(par));
+        	//consumer.seekToEnd(par); 
         	
         	IgniteConfiguration conf = new IgniteConfiguration();
         	// Since multiple consumers will be running on a single node, 
@@ -110,7 +116,6 @@ public class ConsumerKafka implements Runnable, Serializable {
 			
 			//
 			while (true) {
-				// XXX: If a consumer fails, we lose all of the data that was polled
 				ConsumerRecords<String, StreamSegment> records = consumer.poll(Long.MAX_VALUE);
 				this.processIncomingData(records, streamCache, dataStreamer);
 				// Make sure the data that was not get send to the cache was sent
@@ -130,10 +135,14 @@ public class ConsumerKafka implements Runnable, Serializable {
 			IgniteDataStreamer<String, DetectorHolder> dataStreamer) {
 
 		for (ConsumerRecord record : records) {
-			System.out.printf("Record topic = %s, partitoin number = %d, tid = %d\n", record.topic(), record.partition(), tid);
+			System.out.printf("Record topic = %s, partitoin number = %d, tid = %d, offset = %d\n", 
+					record.topic(), record.partition(), tid, record.offset());
 			
 			StreamSegment segment = (StreamSegment) record.value();
 			System.out.println("tid = " + tid + ", " + segment.toString());
+			System.out.println();
+			
+			offsetManager.saveOffsetInExternalStore(record.topic(), record.partition(), record.offset());
 			try {
 				Thread.sleep(2500);
 			} catch (InterruptedException e) { }
