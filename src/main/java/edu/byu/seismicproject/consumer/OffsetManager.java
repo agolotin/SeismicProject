@@ -62,7 +62,14 @@ public class OffsetManager {
 				return Long.parseLong(stream.collect(Collectors.toList()).get(0)) + 1;
         	}
         	else {
+        		// Make sure parent directories exists
+        		Path parent = Paths.get(path.toFile().getParent());
+        		if (!parent.toFile().exists()) {
+        			parent.toFile().mkdirs();
+        		}
+        		// Create the actual file
         		path.toFile().createNewFile();
+        		
         	}
 
         } catch (Exception e) {
