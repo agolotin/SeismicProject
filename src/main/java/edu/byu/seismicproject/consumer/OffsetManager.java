@@ -14,11 +14,9 @@ public class OffsetManager {
 
 
     private String storagePrefix;
-    private int tid;
 
-    public OffsetManager(String storagePrefix, int tid) {
+    public OffsetManager(String storagePrefix) {
         this.storagePrefix = storagePrefix;
-        this.tid = tid;
     }
     
     public String getStorageName() {
@@ -37,7 +35,7 @@ public class OffsetManager {
 
         try {
 
-            FileWriter writer = new FileWriter(storageName(topic, partition, tid), false);
+            FileWriter writer = new FileWriter(storageName(topic, partition), false);
 
             BufferedWriter bufferedWriter = new BufferedWriter(writer);
             bufferedWriter.write(offset + "");
@@ -57,7 +55,7 @@ public class OffsetManager {
     long readOffsetFromExternalStore(String topic, int partition) {
 
         try {
-        	Path path = Paths.get(storageName(topic, partition, tid));
+        	Path path = Paths.get(storageName(topic, partition));
         	if (path.toFile().exists()) {
 				Stream<String> stream = Files.lines(path);
 
@@ -74,8 +72,8 @@ public class OffsetManager {
         return 0;
     }
 
-    private String storageName(String topic, int partition, int tid) {
-        return storagePrefix + "-" + topic + "-" + partition + "-" + tid;
+    private String storageName(String topic, int partition) {
+        return storagePrefix + "-" + topic + "-" + partition;
     }
 
 }

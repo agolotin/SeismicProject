@@ -13,9 +13,9 @@ public class EventConsumerRebalanceListener implements ConsumerRebalanceListener
 	private OffsetManager offsetManager;
 	private Consumer consumer;
 	
-	public EventConsumerRebalanceListener(Consumer consumer, String fileStorageName, int tid) {
+	public EventConsumerRebalanceListener(Consumer consumer, String fileStorageName) {
 		this.consumer = consumer;
-		this.offsetManager = new OffsetManager(fileStorageName, tid);
+		this.offsetManager = new OffsetManager(fileStorageName);
 	}
 
 	@Override

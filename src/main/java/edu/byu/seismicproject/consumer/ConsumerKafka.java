@@ -37,7 +37,7 @@ public class ConsumerKafka implements Runnable, Serializable {
     public ConsumerKafka(int tid, String group_id, String topic, String externalOffsetStorage) {
     	this.tid = tid;
     	this.topic = topic;
-    	offsetManager = new OffsetManager(externalOffsetStorage, tid);
+    	offsetManager = new OffsetManager(externalOffsetStorage);
 
         // Set up the consumer
         Properties props = new Properties();
@@ -68,7 +68,7 @@ public class ConsumerKafka implements Runnable, Serializable {
         try {
         	// Let's try to implement a dynamic consumer with rebalance
         	consumer.subscribe(Arrays.asList(topic), 
-        			new EventConsumerRebalanceListener(consumer, offsetManager.getStorageName(), tid));
+        			new EventConsumerRebalanceListener(consumer, offsetManager.getStorageName()));
         	
         	// Have consumer listen on a specific topic partition
         	//TopicPartition par = new TopicPartition(topic, tid);
@@ -144,7 +144,7 @@ public class ConsumerKafka implements Runnable, Serializable {
 			
 			offsetManager.saveOffsetInExternalStore(record.topic(), record.partition(), record.offset());
 			try {
-				Thread.sleep(2500);
+				Thread.sleep(100);
 			} catch (InterruptedException e) { }
 		
 			/*
