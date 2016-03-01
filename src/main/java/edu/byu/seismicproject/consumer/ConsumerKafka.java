@@ -122,7 +122,6 @@ public class ConsumerKafka implements Runnable, Serializable {
 				return null; // This function should not really return anything
 			}));
 			
-			//
 			while (true) {
 				ConsumerRecords<String, StreamSegment> records = consumer.poll(Long.MAX_VALUE);
 				this.processIncomingData(records, par, streamCache, dataStreamer);
@@ -140,10 +139,12 @@ public class ConsumerKafka implements Runnable, Serializable {
 	
 	/**
 	 * As of now, this method is thread safe. Sine a consumer listens on a specific topic partition,
-	 * we are guaranteed at-lest-one delivery. That means that until we commit our offset, if the process
-	 * fails and if we were not able to commit the last processed offset, when it consumer picks up the partition log, 
-	 * it will seek to the last committed offset. It is possible that it this case the messages will be duplicated, but
-	 * this method introduces fault tolerance into our consumer
+	 * we are guaranteed at-lest-one delivery. That means that we will process a message at least once. 
+	 * If the process fails and if we were not able to commit the last processed offset, when a new consumer 
+	 * picks up the partition log, it will seek to the last committed offset. It is possible that in this case 
+	 * the messages will be duplicated, but such way of doing things introduces fault tolerance into our consumer.
+	 * TODO: We will have to make sure our consumer group can dynamically rebalance its consumers and come up 
+	 * 		 with a better way of storing latest offsets...
 	 * @param records
 	 * @param topicPartition
 	 * @param streamCache
