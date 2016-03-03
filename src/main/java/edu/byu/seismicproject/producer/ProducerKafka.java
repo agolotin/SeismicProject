@@ -275,7 +275,7 @@ public class ProducerKafka {
 			String channel = s_info[2];
 			String loc_id = s_info[3];
 			
-			criteria.add(network, station, channel, loc_id, startDate, endDate);
+			criteria.add(network, station, loc_id, channel, startDate, endDate);
 		}
 		
 		List<Timeseries> timeSeriesCollection = null;
