@@ -1,16 +1,17 @@
 package main.java.edu.byu.seismicproject.ignite.server;
 
+import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
+import org.apache.ignite.cache.CacheMemoryMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+
 //import javax.cache.configuration.FactoryBuilder;
 //import javax.cache.expiry.CreatedExpiryPolicy;
 //import javax.cache.expiry.Duration;
 
 import main.java.edu.byu.seismicproject.signalprocessing.DetectorHolder;
 //import main.java.signalprocessing.StreamProducer;
-
-
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.cache.*;
 
 //import java.util.concurrent.*;
 
@@ -38,8 +39,34 @@ public class IgniteCacheConfig
 		// config.setIndexedTypes(String.class, DetectorHolder.class);
 		// Set the amount of time we want our entries to persist in cache
 		// config.setExpiryPolicyFactory(FactoryBuilder.factoryOf(new CreatedExpiryPolicy(new Duration(TimeUnit.HOURS, 5))));
-		// NOTE: If we don't set up the expiry policy, everything will be in cache always
+		// NOTE: If we don't set up the expiration policy, everything will be in cache always
 		
+		
+		// Make sure the cache is partitioned over multiple nodes
+		config.setCacheMode(CacheMode.PARTITIONED);
+		// This allows multiple ignite clients that run on the same machine to concurrently write to cache
+		config.setAtomicWriteOrderMode(CacheAtomicWriteOrderMode.PRIMARY);
+		// This memory mode stored keys on heap and values off heap. Good for large keys and small values
+		config.setMemoryMode(CacheMemoryMode.OFFHEAP_VALUES);
+		// 0 means unlimited memory
+		config.setOffHeapMaxMemory(0); 
+		// Enable swap space storage
+		// config.setSwapEnabled(true);  // TODO: Configure swap spi on server... or client, not sure which one
+	
+		return config;
+	}
+	
+	/*
+	 * The key passed to the cache configuration is a String with the 
+	 * hashcode of the StreamIdentifier, the topic name, and the partition
+	 * number from a record separated with dashes (-).
+	 * 
+	 * Thus the key is: streamIdentifier#-topic-partitionNum
+	 */
+	public static CacheConfiguration<String, ConsumerRecord> recordHolderCache() 
+	{
+		CacheConfiguration<String, ConsumerRecord> config = new 
+				CacheConfiguration<String, ConsumerRecord>("records");
 		
 		// Make sure the cache is partitioned over multiple nodes
 		config.setCacheMode(CacheMode.PARTITIONED);
