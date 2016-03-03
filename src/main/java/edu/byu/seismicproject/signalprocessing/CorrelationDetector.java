@@ -19,7 +19,6 @@ public class CorrelationDetector {
         int offset = (int) Math.round(startSecond / dt);
         int npts = (int) Math.round(duration / dt);
         
-        // REVIEWME: What does tmpArray suppose to hold? Is it the data block that we are computing our detection statistic against or is it data within a detector? 
         float[] tmpArray = new float[Float.MAX_EXPONENT];//sacTemplate.getData();
         templateData = new float[npts];
         
@@ -32,7 +31,7 @@ public class CorrelationDetector {
         templateAutoCorrelation = tmp;
 
         this.streamId = id;
-        this.detectorid = Integer.MAX_VALUE; 
+        this.detectorid = Integer.MAX_VALUE; // REVIEWME: What is detectorid here?
         // REVIEWME: The next line... What is detectoridSequence? I couldn't find it anywhere
         // detectorid = ++ detectoridSequence; 
     }
