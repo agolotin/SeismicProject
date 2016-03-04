@@ -11,6 +11,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.stream.StreamTransformer;
+import org.apache.ignite.stream.StreamVisitor;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -45,7 +46,6 @@ public class ConsumerKafka implements Runnable, Serializable {
         props.put("bootstrap.servers", "localhost:9092");
         props.put("group.id", group_id);
         props.put("enable.auto.commit", "false");
-        //props.put("auto.commit.interval.ms", "999999999");
         props.put("session.timeout.ms", "30000");
         props.put("key.deserializer", "main.java.edu.byu.seismicproject.general.serialization.StreamSegmentDecoder");
         props.put("value.deserializer", "main.java.edu.byu.seismicproject.general.serialization.StreamSegmentDecoder");
@@ -94,42 +94,61 @@ public class ConsumerKafka implements Runnable, Serializable {
         	conf.setClientMode(true);
         	Ignite ignite = Ignition.start(conf);
         	
-        	//streamCache stores detection statistic, while recordCache stores the records during 
+        	//detectorCache stores detection statistic, while recordCache stores the records during 
         	//processing to allow a previous window to be retrieved and processed with the current one
-			IgniteCache<String, DetectorHolder> streamCache = 
+			IgniteCache<String, DetectorHolder> detectorCache = 
 					ignite.getOrCreateCache(IgniteCacheConfig.detectorHolderCache());			
 			IgniteCache<String, ConsumerRecord> recordCache = 
 					ignite.getOrCreateCache(IgniteCacheConfig.recordHolderCache());
 			
-			IgniteDataStreamer<String, DetectorHolder> dataStreamer = 
-					ignite.dataStreamer(streamCache.getName());
+			// We are not going to push all of the detectors to streamCache at once,
+			// 	but instead we are going to stream data into it
+			IgniteDataStreamer<String, DetectorHolder> detectorStreamer = 
+					ignite.dataStreamer(detectorCache.getName());
 			
-			dataStreamer.allowOverwrite(true);
-			
-			dataStreamer.receiver(StreamTransformer.from((e, arg) ->{ 
-				// e will be the key-value pair, and arg is the new incoming list (of size 1) of new things
+			detectorStreamer.allowOverwrite(true);
+			detectorStreamer.receiver(StreamVisitor.from((detectorsLocalCache, incomingData) -> {
+				String id = (String) incomingData.getKey();
+				DetectorHolder newDetectors = (DetectorHolder) incomingData.getValue();
+				
+				DetectorHolder detectors = detectorsLocalCache.get(id);
+				
+				if (detectors == null) 
+					detectors = new DetectorHolder(newDetectors.getDetectors());
+				else 
+					detectors.add(newDetectors.getDetectors());
+				
+				// Update detectors cache
+				detectorsLocalCache.put(id, detectors);
+			}));
+			/*
+			detectorStreamer.receiver(StreamTransformer.from((e, arg) ->{ 
+				// e will be the key-value pair, and arg is the new incoming list (of size 1 generally) of new detectors 
 				// Get the detector holder for this key
 				System.out.println("Length of incoming arguments for stream "
 						+ "transformer is NOT one: " + String.valueOf(arg.length != 1));
 				
 				DetectorHolder detectors = e.getValue();
 				if (detectors == null) {
-					detectors = new DetectorHolder();
+					// Create a new detector holder
+					detectors = new DetectorHolder(arg);
 				}
-				
-				// TODO: Add more things to detector holder...
-				for (Object detector : arg) {
-					detectors.add(((DetectorHolder) detector).getDetectors());
+				else {
+					// Add more detectors to detector holder...
+					for (Object detector : arg) {
+						detectors.add(((DetectorHolder) detector).getDetectors());
+					}
 				}
 				
 				return null; // This function should not really return anything
 			}));
+			*/
 			
 			while (true) {
 				ConsumerRecords<String, StreamSegment> records = consumer.poll(Long.MAX_VALUE);
-				this.processIncomingData(records, par, streamCache, dataStreamer, recordCache);
+				this.processIncomingData(records, par, detectorCache, detectorStreamer, recordCache);
 				// Make sure the data that was not get send to the cache was sent
-				dataStreamer.flush();
+				detectorStreamer.flush();
 			}
         }
         catch(Exception e) {
@@ -151,14 +170,16 @@ public class ConsumerKafka implements Runnable, Serializable {
 	 * @param records
 	 * @param topicPartition
 	 * @param streamCache
-	 * @param dataStreamer
+	 * @param detectorStreamer
+	 * @param recordCache
 	 */
 	private void processIncomingData(ConsumerRecords<String, StreamSegment> records, 
 									 TopicPartition topicPartition, 
-									 IgniteCache<String, DetectorHolder> streamCache, 
-									 IgniteDataStreamer<String, DetectorHolder> dataStreamer,
+									 IgniteCache<String, DetectorHolder> detectorCache, 
+									 IgniteDataStreamer<String, DetectorHolder> detectorStreamer,
 									 IgniteCache<String, ConsumerRecord> recordCache) {
 
+		/*
 		long currentRecordNum = 0, recordsToCommit = records.records(topicPartition).size();
 		// If we have more than 50 records to commit, we commit every 1/5 of total records
 		if (recordsToCommit > 50) {
@@ -166,90 +187,82 @@ public class ConsumerKafka implements Runnable, Serializable {
 		}
 		
 		System.out.println("tid = " + tid + ", records to commit for this poll = " + recordsToCommit);		
+		*/
 		
-		for (ConsumerRecord record : records) {
+		for (ConsumerRecord currentRecord : records) {
 			//Logic: We need the previous record from the cache in order to calculate stats,
 			//so I first pass the current record to the getPreviousRecord method. If it returns null,
 			//I cache the current record and move on. If it comes back with a value, I still cache 
 			//the current record (I'll need it next time), but I do calculate stats .
 			
-			ConsumerRecord previousRecord = this.getPreviousRecord(record, recordCache);
+			StreamSegment currentSegment = (StreamSegment) currentRecord.value();
+			ConsumerRecord previousRecord = this.getPreviousRecord(currentRecord, currentSegment, recordCache);
 			
 			
 			//Debug code
 			/*******************************************/
-			System.out.println("\n\n");
-			System.out.println(record.toString());
-			System.out.println("\n\n");
-			System.out.printf("Record topic = %s, partition number = %d, tid = %d, offset = %d\n", 
-					record.topic(), record.partition(), tid, record.offset());
+			//System.out.println("\n\n");
+			//System.out.println(record.toString());
+			//System.out.println("\n\n");
+			//System.out.printf("Record topic = %s, partition number = %d, tid = %d, offset = %d\n", 
+			//		record.topic(), record.partition(), tid, record.offset());
 			
-			StreamSegment segment = (StreamSegment) record.value();
+			//StreamSegment segment = (StreamSegment) record.value();
 			
-			System.out.println("tid = " + tid + ", " + segment.toString());
-			System.out.println();
+			//System.out.println("NEW INCOMING WINDOW: tid = " + tid + ", " + segment.toString());
 
 			//End debug code
 			/*******************************************/
-			try {
-				Thread.sleep(100);
-			} catch (InterruptedException e) { }
 		
 			if (previousRecord != null) {
 				
-				System.out.println("Before");
-				System.out.println(previousRecord);
-				System.out.println(record);
-				System.out.println("After");
-	
 				/*
-				TimeseriesCustom data = (TimeseriesCustom) record.value();
-				SegmentCustom timeseriesSegment = data.getSegment();
-				float[] mainData = timeseriesSegment.getMainData();
-				final int secondsPerBlock = 5;
+				System.out.println("PREVIOUS WINDOW: " + previousRecord.value());
+				System.out.println("NEW INCOMING WINDOW: " + currentSegment);
 				
-				// An incoming stream might have a new id
-				// XXX: Seismic band is null right now, don't do that....
-				id = new StreamIdentifier(data.getNetworkCode(), data.getStationCode(), data.getChannelCode(), data.getLocation(), null);
-				// Create a stream producer that will handle everything
-				StreamProducer segmentDataStream = new StreamProducer(id, mainData, timeseriesSegment.getStartTime(), 
-						timeseriesSegment.getEndTime(), secondsPerBlock, timeseriesSegment.getSampleRate());
-	
-				
-				// =========================================================== || Here comes the fun part...
-			   // XXX: Need to create a function for this that will make sure it 
-			   //	either takes stuff from cache or creates a new correlation detector
-				double streamStart = segmentDataStream.getStartTime();
-				StreamSegment previous = null;
-				// Actual calculation of detection statistics
-				while (segmentDataStream.hasNext()) {
-					
-				   StreamSegment segment = segmentDataStream.getNext();
-				   System.out.println(segment.getStartTime());
-				   
-				   if (previous != null) {
-					  StreamSegment combined = StreamSegment.combine(segment, previous);
-					  streamStart = previous.getStartTime(); // FIXME: Is this right?
-					  
-					  // FIXME: make sure there's something in cache at all
-					  for (CorrelationDetector detector : streamCache.get(segmentDataStream.toString()).getDetectors()) { 
-						 if (detector.isCompatibleWith(combined)) {
-						   DetectionStatistic statistic = detector.produceStatistic(combined);
-						   writeStatistic( detector, statistic, streamStart);
-						   // Put stuff into cache instead
-						 }
-					  }
-				   }
-				   previous = segment;
-				}
-				// =========================================================== ||
-				
+				try {
+					Thread.sleep(500);
+				} catch (InterruptedException e) { }
 				*/
+				StreamSegment previousSegment = (StreamSegment) previousRecord.value();
+				if (previousSegment.isPreviousTo(currentSegment)) {
+					StreamSegment combined = StreamSegment.combine(currentSegment, previousSegment);
+					long streamStart = previousSegment.getStartTime();
+					
+					DetectorHolder detectors = detectorCache.get(String.valueOf(combined.getId().hashCode()));
+					
+					// If there are any detectors already in cache, compute detection statistic for each one
+					if (detectors != null) {
+						for (CorrelationDetector singleDetector : detectors.getDetectors()) {
+							if (singleDetector.isCompatibleWith(combined)) {
+								// XXX: Something's wrong with our produceStatistic logic...
+								//DetectionStatistic statistic = singleDetector.produceStatistic(combined);
+								//writeStatistic(singleDetector, statistic, streamStart);
+							}
+						}
+					}
+					else { // otherwise create a new detector and throw it into cache 
+						CorrelationDetector newDetector = new CorrelationDetector(combined.getId(), combined);
+						DetectorHolder detectorHolder = new DetectorHolder(newDetector);
+						
+						detectorStreamer.addData(String.valueOf(combined.getId().hashCode()), detectorHolder);
+					}
+				}
+	
 				//offsetManager.saveOffsetInExternalStore(partition.topic(), partition.partition(), lastoffset);
 			}
-			//Cache the current record. It will serve as 
-			this.cacheRecord(record, recordCache);			
 			
+			//Cache the current record. It will serve as the previous record when we get the next block
+			this.cacheRecord(currentRecord, currentSegment, recordCache);			
+			
+			long lastoffset = currentRecord.offset() + 1; 
+			consumer.commitSync(Collections.singletonMap(topicPartition, new OffsetAndMetadata(lastoffset)));
+			
+			// print out the last committed offset for debugging purposes...
+			System.out.println(consumer.committed(topicPartition));
+			System.out.println();
+			
+			/*
 			// See if we want to commit the offset 
 			if (currentRecordNum++ == recordsToCommit) { 
 				//NOTE: The committed offset should always be the offset of the next message that the application will read. 
@@ -259,8 +272,10 @@ public class ConsumerKafka implements Runnable, Serializable {
 				consumer.commitSync(Collections.singletonMap(topicPartition, new OffsetAndMetadata(lastoffset)));
 				System.out.println(consumer.committed(topicPartition));
 			}			
+			*/
 		}
-		consumer.commitSync(); // Commit the offsets that have not been committed
+		// We shouldn't have to commit anything here...we commit every record we process
+		//consumer.commitSync(); // Commit the offsets that have not been committed...
 	}
     
     private void writeStatistic(CorrelationDetector detector, DetectionStatistic statistic, double streamStart) {
@@ -272,14 +287,13 @@ public class ConsumerKafka implements Runnable, Serializable {
      * The SeismicBand hash value from the record will be used to key the entry for caching.
      */
     private ConsumerRecord getPreviousRecord(ConsumerRecord currentRecord,
-    			IgniteCache<String, ConsumerRecord> recordCache) {
+    			StreamSegment newSegment, IgniteCache<String, ConsumerRecord> recordCache) {
     	
     	// Parse out the StreamIdentifier and hash it, then convert the hash to a string 
     	// for Ignite cache key. Key also includes topic and partition
     	// streamIdentifier#-topic-partitionNum
 
-    	StreamSegment segment = (StreamSegment) currentRecord.value();
-    	String key = Integer.toString(segment.getId().hashCode()) + "-" +
+    	String key = Integer.toString(newSegment.getId().hashCode()) + "-" +
     				currentRecord.topic() + "-" + currentRecord.partition();
 		
     	ConsumerRecord previousRecord = recordCache.get(key);   	
@@ -291,14 +305,13 @@ public class ConsumerKafka implements Runnable, Serializable {
      * This method will store a record in an Ignite cache so it can be used for 
      * processing with the next block as that next block (from same band) comes in.
      */
-    private void cacheRecord(ConsumerRecord currentRecord,
+    private void cacheRecord(ConsumerRecord currentRecord, StreamSegment currentSegment, 
     		IgniteCache<String, ConsumerRecord> recordCache) {    	
     	
     	// Parse out the StreamIdentifier and hash it, then convert the hash to a string 
     	// for Ignite cache key. Key also includes topic and partition
     	// streamIdentifier#-topic-partitionNum
-    	StreamSegment segment = (StreamSegment) currentRecord.value();
-    	String key = Integer.toString(segment.getId().hashCode()) + "-" +
+    	String key = Integer.toString(currentSegment.getId().hashCode()) + "-" +
     				currentRecord.topic() + "-" + currentRecord.partition();
     	//#streamIdentifier-topic-partitionNum
     	

@@ -33,7 +33,7 @@ public class StreamSegment implements Serializable {
         // The bands also have to be the same for streams to be compatible... just double checking
         if (!this.id.getBand().equals(other.getId().getBand())) 
         	return false;
-        if (this.endTime != (other.startTime)) // make sure this check is the same as described above...
+        if (this.startTime != (other.endTime)) // make sure this check is the same as described above...
         	return false;
         
         if (this.equals(other)) // If the streams are exactly the same it's bad...right?
@@ -69,12 +69,26 @@ public class StreamSegment implements Serializable {
     	System.arraycopy(block1, 0, combinedBlock, 0, blockSizeSamps);
     	return new StreamSegment(segment1.id, segment1.startTime, segment2.endTime, segment1.sampleInterval, combinedBlock);
     }
+	
+	/**
+	 * Make sure that the two objects follow each other
+	 * @param nextSegment - theoretical next segment
+	 * @return Boolean representing whether to segments follow each other
+	 */
+	public boolean isPreviousTo(StreamSegment nextSegment) {
+		return this.endTime == nextSegment.startTime;
+	}
+    
 
     // ======== GETTERS ========= ||
 
-    public double getStartTime() {
+    public long getStartTime() {
 		return startTime;
 	}
+    
+    public long getEndTime() {
+    	return endTime;
+    }
 
 	public double getSampleInterval() {
 		return sampleInterval;
@@ -126,5 +140,5 @@ public class StreamSegment implements Serializable {
 			return false;
 		return true;
 	}
-    
+
 }

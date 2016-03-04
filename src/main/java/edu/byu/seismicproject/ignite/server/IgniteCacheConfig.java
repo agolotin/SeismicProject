@@ -10,6 +10,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 //import javax.cache.expiry.CreatedExpiryPolicy;
 //import javax.cache.expiry.Duration;
 
+
 import main.java.edu.byu.seismicproject.signalprocessing.DetectorHolder;
 //import main.java.signalprocessing.StreamProducer;
 
@@ -63,6 +64,7 @@ public class IgniteCacheConfig
 	 * 
 	 * Thus the key is: streamIdentifier#-topic-partitionNum
 	 */
+	@SuppressWarnings("rawtypes")
 	public static CacheConfiguration<String, ConsumerRecord> recordHolderCache() 
 	{
 		CacheConfiguration<String, ConsumerRecord> config = new 
