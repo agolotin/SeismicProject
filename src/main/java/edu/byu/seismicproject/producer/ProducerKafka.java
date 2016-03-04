@@ -128,7 +128,7 @@ public class ProducerKafka {
      */
 	public void runKafkaProducer() throws IOException, InterruptedException {
         // log4j writes to stdout for now
-        // org.apache.log4j.BasicConfigurator.configure();
+        org.apache.log4j.BasicConfigurator.configure();
         
         List<Timeseries> timeSeriesCollection = this.getIrisMessage();
         
@@ -141,6 +141,7 @@ public class ProducerKafka {
 
         // We are waiting for all of the runnables to finish sending messages and then we can close the producer
         for (ExecutorService producerRunnables : producers) {
+        	producerRunnables.shutdown();
         	producerRunnables.awaitTermination(365, TimeUnit.DAYS); 
         }
         this.producer.close();

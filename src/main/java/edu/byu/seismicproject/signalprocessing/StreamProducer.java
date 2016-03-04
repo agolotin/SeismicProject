@@ -70,7 +70,7 @@ public class StreamProducer {
 		}
 	}
     
-    public boolean hasNext() {
+    public boolean hasNext() { // REVIEWME: So we don't need the last block at all?
         return currentBlock < numBlocks - 1;
     }
 

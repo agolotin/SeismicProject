@@ -33,9 +33,9 @@ class ProducerRunnable implements Runnable {
 						new ProducerRecord<String, StreamSegment>(topic, partitionNum, null, streamer.getNext());
 				this.producer.send(producerData).get(); // Right now let's block on a send...
 			}
-		} catch (InterruptedException | ExecutionException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		} 
+		catch (InterruptedException | ExecutionException e) {
+			Thread.currentThread().interrupt();
 		}
 	}
 	
