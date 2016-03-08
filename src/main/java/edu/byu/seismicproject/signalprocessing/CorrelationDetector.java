@@ -5,7 +5,7 @@ public class CorrelationDetector {
 	private final int BLOCK_SIZE;
     private final double templateAutoCorrelation; // this is the autocorrelation for two consecutive blocks
 
-	private final float[] combinedData; // this represents data for two consecutive blocks
+	private final float[] templateData; // this represents data for two consecutive blocks
     private final StreamIdentifier streamId;
     private final int detectorid; // REVIEWME: What is detectorid?
     
@@ -17,16 +17,19 @@ public class CorrelationDetector {
         //int offset = (int) Math.round(startSecond / dt);
     	//int npts = (int) Math.round(duration / dt);
         
-        combinedData = combined.getData();
-        BLOCK_SIZE = combinedData.length / 2;
+        float[]tmpData = combined.getData();
+        BLOCK_SIZE = tmpData.length / 2;
         
+        templateData = new float[BLOCK_SIZE];
+        int offset =  BLOCK_SIZE / 2;
+        System.arraycopy(tmpData, offset, templateData, 0, BLOCK_SIZE);
         //float[] tmpArray = sacTemplate.getData();
         //templateData = new float[npts];
         
         //Compute autocorrelation…
 		//System.arraycopy(tmpArray, offset, templateData, 0, npts);
         double tmp = 0;
-        for (float v : combinedData) {
+        for (float v : templateData) {
             tmp += v * v;
         }
         templateAutoCorrelation = tmp;
@@ -47,12 +50,10 @@ public class CorrelationDetector {
             double dataAutoCorrelation = 0;
             double crossCorrelation = 0;
             
-            //for (int k = 0; k < combinedData.length; ++k) {
-            for (int k = 0; k < combinedData.length / 2; ++k) {
-                //int m = j + k + offset;
-                int m = j + offset;
+            for (int k = 0; k < templateData.length; ++k) {
+                int m = j + k + offset;
                 dataAutoCorrelation += data[m] * data[m];
-                crossCorrelation += data[m] * combinedData[m];//combinedData[k];
+                crossCorrelation += data[m] * templateData[k];
             }
             
             double denom = Math.sqrt(dataAutoCorrelation * templateAutoCorrelation);
@@ -60,6 +61,7 @@ public class CorrelationDetector {
             result[j] = (float) (cc*cc);
         }
         return result;
+
     }
 
     public DetectionStatistic produceStatistic(StreamSegment segment ){
@@ -83,7 +85,7 @@ public class CorrelationDetector {
 	}
 
 	public float[] getTemplateData() {
-		return combinedData;
+		return templateData;
 	}
 
 	public StreamIdentifier getStreamId() {
