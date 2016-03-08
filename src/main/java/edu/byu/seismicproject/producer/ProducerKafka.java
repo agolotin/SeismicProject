@@ -57,15 +57,14 @@ public class ProducerKafka {
     	FileInputStream in = new FileInputStream(args[0]);
     	inputProps.load(in);
     	in.close();
-    	
+		
         ProducerKafka prod = new ProducerKafka(inputProps);
-
+        
         try {
             prod.runKafkaProducer();
         } catch (TopicExistsException | IOException | InterruptedException e) {
             e.printStackTrace();
         }
-
     }
 
     /**
@@ -77,7 +76,6 @@ public class ProducerKafka {
     public ProducerKafka(Properties inputProps) {
     	
     	// TODO: the constructor will take a list of stations, which will be topic later on
-    	// XXX: Implement a class that will spin off a runnable per station
     	
     	stationList = ((String) inputProps.get("stations")).split(",");
 
@@ -266,6 +264,9 @@ public class ProducerKafka {
 		} catch (ParseException e) {
 			e.printStackTrace();
 		}
+//		this timestamp has 2 segments..
+//		long startTime = Long.parseLong("1113999060000"), endTime = Long.parseLong("1114099060000"); 
+		
 		WaveformCriteria criteria = new WaveformCriteria();
 
 		for (String info : stationList) {
