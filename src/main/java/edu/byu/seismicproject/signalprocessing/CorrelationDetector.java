@@ -2,7 +2,7 @@ package main.java.edu.byu.seismicproject.signalprocessing;
 
 public class CorrelationDetector {
 
-	public final int BLOCK_SIZE;
+	private final int BLOCK_SIZE;
     private final double templateAutoCorrelation; // this is the autocorrelation for two consecutive blocks
 
 	private final float[] combinedData; // this represents data for two consecutive blocks
@@ -13,15 +13,14 @@ public class CorrelationDetector {
 //    public CorrelationDetector(StreamIdentifier id, long startSecond, double duration, double sampleInterval) {
     public CorrelationDetector(StreamIdentifier id, StreamSegment combined) {
 
-    	// REVIEWME: I'm not sure what in this case delta should represent... is it sample interval as well?
-        //double dt = combined.getSampleInterval();//Double.MAX_VALUE;//sacTemplate.getHeader().delta;
+        //double dt = combined.getSampleInterval();
         //int offset = (int) Math.round(startSecond / dt);
     	//int npts = (int) Math.round(duration / dt);
         
         combinedData = combined.getData();
         BLOCK_SIZE = combinedData.length / 2;
         
-        //float[] tmpArray = new float[Float.MAX_EXPONENT];//sacTemplate.getData();
+        //float[] tmpArray = sacTemplate.getData();
         //templateData = new float[npts];
         
         //Compute autocorrelation…
@@ -34,7 +33,6 @@ public class CorrelationDetector {
 
         this.streamId = id;
         this.detectorid = Integer.MAX_VALUE; 
-        // REVIEWME: The next line... What is detectoridSequence? I couldn't find it anywhere
         // detectorid = ++ detectoridSequence; 
     }
     
@@ -49,10 +47,12 @@ public class CorrelationDetector {
             double dataAutoCorrelation = 0;
             double crossCorrelation = 0;
             
-            for (int k = 0; k < combinedData.length; ++k) {
-                int m = j + k + offset;
+            //for (int k = 0; k < combinedData.length; ++k) {
+            for (int k = 0; k < combinedData.length / 2; ++k) {
+                //int m = j + k + offset;
+                int m = j + offset;
                 dataAutoCorrelation += data[m] * data[m];
-                crossCorrelation += data[m] * combinedData[k];
+                crossCorrelation += data[m] * combinedData[m];//combinedData[k];
             }
             
             double denom = Math.sqrt(dataAutoCorrelation * templateAutoCorrelation);
@@ -67,8 +67,8 @@ public class CorrelationDetector {
         float[] statistic = produceStatistic(data);
         
         int offset = BLOCK_SIZE / 2;
-        double dt = segment.getSampleInterval();
-        double newStart = segment.getStartTime() + dt * offset;
+        long dt = (long) segment.getSampleInterval();
+        long newStart = segment.getStartTime() + dt * offset;
         
         return new DetectionStatistic(segment.getId(), detectorid, newStart, dt, statistic);
     }

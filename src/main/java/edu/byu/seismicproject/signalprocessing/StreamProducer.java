@@ -25,7 +25,7 @@ public class StreamProducer {
 		this.startTime = startTime;
 		
 		// NOTE: https://courses.engr.illinois.edu/ece110/content/courseNotes/files/?samplingAndQuantization#SAQ-SMP
-		this.sampleInterval = 1.0 / sampleRate; // this is how much seconds there are per sample
+		this.sampleInterval = 1.0 / sampleRate; // this is how many seconds there are per sample
 
 		this.blockSizeSamps = (int) (secondsPerBlock * sampleRate);//blockSizeSamps;
 
@@ -34,7 +34,7 @@ public class StreamProducer {
 		
 		this.id = id;
 		
-		// Set up IIR filter that will be used to filter all data blocks into the 2-8 Hz band
+		// Set up IIR filter that will be used to filter all data blocks into a specific band
 		int order = id.getBand().getOrder();
 		double lowCorner = id.getBand().getLowCorner();
 		double highCorner = id.getBand().getHighCorner();
@@ -42,12 +42,12 @@ public class StreamProducer {
 		filter = new Butterworth(order, PassbandType.BANDPASS, lowCorner, highCorner, sampleInterval);
 
 		filteredDataBlocks = new StreamSegment[numBlocks];
-		createFilteredBlocksFromRawData(rawData);
+		this.createFilteredBlocksFromRawData(rawData);
     }
 	
 	
 	/**
-	 * This function generates a list of StreamIdentifier blocks that will be processed by 
+	 * This function generates a list of StreamSegment blocks that will be processed by 
 	 * the Ignite client. This is done in order for us to discard the raw data and keep only the
 	 * filtered data stream in blocks
 	 * FIXME: Make sure we are setting the start and end time here correctly....it seems like we are not...
@@ -70,7 +70,7 @@ public class StreamProducer {
 		}
 	}
     
-    public boolean hasNext() { // REVIEWME: So we don't need the last block at all?
+    public boolean hasNext() { 
         return currentBlock < numBlocks - 1;
     }
 

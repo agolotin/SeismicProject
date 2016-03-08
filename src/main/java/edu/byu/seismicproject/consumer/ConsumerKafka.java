@@ -9,6 +9,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.stream.StreamTransformer;
 import org.apache.ignite.stream.StreamVisitor;
@@ -236,7 +237,7 @@ public class ConsumerKafka implements Runnable, Serializable {
 						for (CorrelationDetector singleDetector : detectors.getDetectors()) {
 							if (singleDetector.isCompatibleWith(combined)) {
 								// XXX: Something's wrong with our produceStatistic logic...
-								//DetectionStatistic statistic = singleDetector.produceStatistic(combined);
+								DetectionStatistic statistic = singleDetector.produceStatistic(combined);
 								//writeStatistic(singleDetector, statistic, streamStart);
 							}
 						}
@@ -245,7 +246,8 @@ public class ConsumerKafka implements Runnable, Serializable {
 						CorrelationDetector newDetector = new CorrelationDetector(combined.getId(), combined);
 						DetectorHolder detectorHolder = new DetectorHolder(newDetector);
 						
-						detectorStreamer.addData(String.valueOf(combined.getId().hashCode()), detectorHolder);
+						detectorCache.put(String.valueOf(combined.getId().hashCode()), detectorHolder);
+						//detectorStreamer.addData(String.valueOf(combined.getId().hashCode()), detectorHolder);
 					}
 				}
 	
@@ -257,6 +259,8 @@ public class ConsumerKafka implements Runnable, Serializable {
 			
 			long lastoffset = currentRecord.offset() + 1; 
 			consumer.commitSync(Collections.singletonMap(topicPartition, new OffsetAndMetadata(lastoffset)));
+			
+			System.out.println("Size of cache = " + detectorCache.size(CachePeekMode.ALL));
 			
 			// print out the last committed offset for debugging purposes...
 			System.out.println(consumer.committed(topicPartition));
