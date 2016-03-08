@@ -17,12 +17,9 @@ public class CorrelationDetector {
         //int offset = (int) Math.round(startSecond / dt);
     	//int npts = (int) Math.round(duration / dt);
         
-        float[]tmpData = combined.getData();
-        BLOCK_SIZE = tmpData.length / 2;
+        templateData = combined.getData();
+        BLOCK_SIZE = templateData.length / 2;
         
-        templateData = new float[BLOCK_SIZE];
-        int offset =  BLOCK_SIZE / 2;
-        System.arraycopy(tmpData, offset, templateData, 0, BLOCK_SIZE);
         //float[] tmpArray = sacTemplate.getData();
         //templateData = new float[npts];
         
