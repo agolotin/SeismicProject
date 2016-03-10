@@ -11,7 +11,7 @@ public class StreamProducer {
     private final int numBlocks;
     private int currentBlock;
 
-    private final long startTime;
+    private final double startTime;
     private final double sampleInterval;
     private final StreamIdentifier id;
     
@@ -64,8 +64,8 @@ public class StreamProducer {
 			filter.filter(block);
 			
 			// TODO: make sure this double to long conversion won't screw things up
-			long blockStartTime = startTime + (long) (offset * sampleInterval); 
-			long blockEndTime = startTime + (long) ((blockSizeSamps * (i+1)) * sampleInterval);
+			double blockStartTime = startTime + (offset * sampleInterval); 
+			double blockEndTime = startTime + ((blockSizeSamps * (i+1)) * sampleInterval);
 			filteredDataBlocks[i] = new StreamSegment(id, blockStartTime, blockEndTime, sampleInterval, block);
 		}
 	}

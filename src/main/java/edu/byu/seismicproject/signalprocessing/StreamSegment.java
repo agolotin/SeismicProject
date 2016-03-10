@@ -8,13 +8,13 @@ public class StreamSegment implements Serializable {
 
 	/// REVIEWME: Are the start time and sample interval in seconds or milliseconds? 
 	///				Right now the program assumes seconds
-	private final long startTime;  
-	private final long endTime;
+	private final double startTime;  
+	private final double endTime;
     private final double sampleInterval; 
     private final float[] data;
     private final StreamIdentifier id;
 
-    public StreamSegment(StreamIdentifier id, long startTime, long endTime, double sampleInterval, float[] data) {
+    public StreamSegment(StreamIdentifier id, double startTime, double endTime, double sampleInterval, float[] data) {
         this.id = id;
         this.startTime = startTime;
         this.endTime = endTime;
@@ -82,11 +82,11 @@ public class StreamSegment implements Serializable {
 
     // ======== GETTERS ========= ||
 
-    public long getStartTime() {
+    public double getStartTime() {
 		return startTime;
 	}
     
-    public long getEndTime() {
+    public double getEndTime() {
     	return endTime;
     }
 

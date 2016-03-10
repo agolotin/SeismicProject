@@ -187,7 +187,7 @@ public class ConsumerKafka implements Runnable, Serializable {
 				StreamSegment previousSegment = (StreamSegment) previousRecord.value();
 				if (previousSegment.isPreviousTo(currentSegment)) {
 					StreamSegment combined = StreamSegment.combine(currentSegment, previousSegment);
-					long streamStart = previousSegment.getStartTime();
+					double streamStart = previousSegment.getStartTime();
 					
 					DetectorHolder detectors = detectorCache.get(String.valueOf(combined.getId().hashCode()));
 					
