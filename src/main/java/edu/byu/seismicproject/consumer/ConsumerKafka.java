@@ -174,7 +174,7 @@ public class ConsumerKafka implements Runnable, Serializable {
 				//		 all of the new messages are actually old messages. 
 				//		 To account for it we just have to change this check to be more
 				//		 sophisticated.
-				if (previousRecord.offset() > currentRecord.offset())
+				if (previousRecord.offset() >= currentRecord.offset())
 					continue;
 				/*
 				System.out.println("PREVIOUS BLOCK: " + previousRecord.value());
@@ -234,8 +234,12 @@ public class ConsumerKafka implements Runnable, Serializable {
 	}
     
     private void writeStatistic(CorrelationDetector detector, DetectionStatistic statistic, double streamStart) {
-    	System.out.printf("detector stream id = %d,\n streamStart = %d,\n statistic = %d\n\n", 
-    			detector.getStreamId(), streamStart, statistic.getStatistic());
+    	System.out.printf("detector stream id = %s,\n streamStart = %s,\n statistic = ", 
+    			detector.getStreamId().toString(), String.valueOf(streamStart));
+    	for (float stat : statistic.getStatistic())
+			System.out.printf("%f  ", stat);
+    	
+    	System.out.print("\n\n");
 	}
     
     /**
