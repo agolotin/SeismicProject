@@ -34,9 +34,6 @@ public class ConsumerKafka implements Runnable, Serializable {
     private final String topic;
     private final int tid;
         
-	// TODO: This will have to be a command line parameter...probably
-    private double blockSize;
-
     public ConsumerKafka(int tid, String group_id, String topic, String externalOffsetStorage) {
     	this.tid = tid;
     	this.topic = topic;
@@ -102,54 +99,9 @@ public class ConsumerKafka implements Runnable, Serializable {
 			IgniteCache<String, ConsumerRecord> recordCache = 
 					ignite.getOrCreateCache(IgniteCacheConfig.recordHolderCache());
 			
-			// We are not going to push all of the detectors to streamCache at once,
-			// 	but instead we are going to stream data into it
-			IgniteDataStreamer<String, DetectorHolder> detectorStreamer = 
-					ignite.dataStreamer(detectorCache.getName());
-			
-			detectorStreamer.allowOverwrite(true);
-			detectorStreamer.receiver(StreamVisitor.from((detectorsLocalCache, incomingData) -> {
-				String id = (String) incomingData.getKey();
-				DetectorHolder newDetectors = (DetectorHolder) incomingData.getValue();
-				
-				DetectorHolder detectors = detectorsLocalCache.get(id);
-				
-				if (detectors == null) 
-					detectors = new DetectorHolder(newDetectors.getDetectors());
-				else 
-					detectors.add(newDetectors.getDetectors());
-				
-				// Update detectors cache
-				detectorsLocalCache.put(id, detectors);
-			}));
-			/*
-			detectorStreamer.receiver(StreamTransformer.from((e, arg) ->{ 
-				// e will be the key-value pair, and arg is the new incoming list (of size 1 generally) of new detectors 
-				// Get the detector holder for this key
-				System.out.println("Length of incoming arguments for stream "
-						+ "transformer is NOT one: " + String.valueOf(arg.length != 1));
-				
-				DetectorHolder detectors = e.getValue();
-				if (detectors == null) {
-					// Create a new detector holder
-					detectors = new DetectorHolder(arg);
-				}
-				else {
-					// Add more detectors to detector holder...
-					for (Object detector : arg) {
-						detectors.add(((DetectorHolder) detector).getDetectors());
-					}
-				}
-				
-				return null; // This function should not really return anything
-			}));
-			*/
-			
 			while (true) {
 				ConsumerRecords<String, StreamSegment> records = consumer.poll(Long.MAX_VALUE);
-				this.processIncomingData(records, par, detectorCache, detectorStreamer, recordCache);
-				// Make sure the data that was not get send to the cache was sent
-				detectorStreamer.flush();
+				this.processIncomingData(records, par, detectorCache, recordCache);
 			}
         }
         catch(Exception e) {
@@ -177,28 +129,22 @@ public class ConsumerKafka implements Runnable, Serializable {
 	private void processIncomingData(ConsumerRecords<String, StreamSegment> records, 
 									 TopicPartition topicPartition, 
 									 IgniteCache<String, DetectorHolder> detectorCache, 
-									 IgniteDataStreamer<String, DetectorHolder> detectorStreamer,
 									 IgniteCache<String, ConsumerRecord> recordCache) {
 
-		/*
 		long currentRecordNum = 0, recordsToCommit = records.records(topicPartition).size();
 		// If we have more than 50 records to commit, we commit every 1/5 of total records
+		//   The number 50 was chosen arbitrarily...
 		if (recordsToCommit > 50) {
 			recordsToCommit = records.records(topicPartition).size() / 5;
 		}
 		
 		System.out.println("tid = " + tid + ", records to commit for this poll = " + recordsToCommit);		
-		*/
 		
 		for (ConsumerRecord currentRecord : records) {
 			//Logic: We need the previous record from the cache in order to calculate stats,
 			//so I first pass the current record to the getPreviousRecord method. If it returns null,
 			//I cache the current record and move on. If it comes back with a value, I still cache 
 			//the current record (I'll need it next time), but I do calculate stats .
-			
-			StreamSegment currentSegment = (StreamSegment) currentRecord.value();
-			ConsumerRecord previousRecord = this.getPreviousRecord(currentRecord, currentSegment, recordCache);
-			
 			
 			//Debug code
 			/*******************************************/
@@ -214,12 +160,25 @@ public class ConsumerKafka implements Runnable, Serializable {
 
 			//End debug code
 			/*******************************************/
+			StreamSegment currentSegment = (StreamSegment) currentRecord.value();
+			ConsumerRecord previousRecord = this.getPreviousRecord(currentRecord, currentSegment, recordCache);
 		
 			if (previousRecord != null) {
 				
+				// This is where we check to see if we are duplicating the messages
+				//		because the last record we cached should have a lower offset
+				//		that a completely new message
+				// NOTE: In case if we delete a topic, and then start it again.
+				//		 it is really important that we clear the Ignite's recordCache
+				//		 as well. If we don't do it, the framework will think that
+				//		 all of the new messages are actually old messages. 
+				//		 To account for it we just have to change this check to be more
+				//		 sophisticated.
+				if (previousRecord.offset() > currentRecord.offset())
+					continue;
 				/*
-				System.out.println("PREVIOUS WINDOW: " + previousRecord.value());
-				System.out.println("NEW INCOMING WINDOW: " + currentSegment);
+				System.out.println("PREVIOUS BLOCK: " + previousRecord.value());
+				System.out.println("NEW INCOMING BLOCK: " + currentSegment);
 				
 				try {
 					Thread.sleep(500);
@@ -238,7 +197,7 @@ public class ConsumerKafka implements Runnable, Serializable {
 							if (singleDetector.isCompatibleWith(combined)) {
 								// XXX: Something's wrong with our produceStatistic logic...
 								DetectionStatistic statistic = singleDetector.produceStatistic(combined);
-								//writeStatistic(singleDetector, statistic, streamStart);
+								writeStatistic(singleDetector, statistic, streamStart);
 							}
 						}
 					}
@@ -247,46 +206,39 @@ public class ConsumerKafka implements Runnable, Serializable {
 						DetectorHolder detectorHolder = new DetectorHolder(newDetector);
 						
 						detectorCache.put(String.valueOf(combined.getId().hashCode()), detectorHolder);
-						//detectorStreamer.addData(String.valueOf(combined.getId().hashCode()), detectorHolder);
 					}
 				}
-	
-				//offsetManager.saveOffsetInExternalStore(partition.topic(), partition.partition(), lastoffset);
 			}
-			
-			//Cache the current record. It will serve as the previous record when we get the next block
 			this.cacheRecord(currentRecord, currentSegment, recordCache);			
 			
-			long lastoffset = currentRecord.offset() + 1; 
-			consumer.commitSync(Collections.singletonMap(topicPartition, new OffsetAndMetadata(lastoffset)));
+			//long lastoffset = currentRecord.offset() + 1; 
+			//consumer.commitSync(Collections.singletonMap(topicPartition, new OffsetAndMetadata(lastoffset)));
 			
-			System.out.println("Size of cache = " + detectorCache.size(CachePeekMode.ALL));
+			//System.out.println("Size of cache = " + detectorCache.size(CachePeekMode.ALL));
 			
-			// print out the last committed offset for debugging purposes...
-			System.out.println(consumer.committed(topicPartition));
-			System.out.println();
+			//print out the last committed offset for debugging purposes...
+			//System.out.println(consumer.committed(topicPartition));
+			//System.out.println();
 			
-			/*
 			// See if we want to commit the offset 
 			if (currentRecordNum++ == recordsToCommit) { 
 				//NOTE: The committed offset should always be the offset of the next message that the application will read. 
 				//	Thus, when calling commitSync(offsets) we should add one to the offset of the last message processed
 				currentRecordNum = 0;
-				long lastoffset = record.offset() + 1; 
+				long lastoffset = currentRecord.offset() + 1; 
 				consumer.commitSync(Collections.singletonMap(topicPartition, new OffsetAndMetadata(lastoffset)));
 				System.out.println(consumer.committed(topicPartition));
 			}			
-			*/
 		}
-		// We shouldn't have to commit anything here...we commit every record we process
-		//consumer.commitSync(); // Commit the offsets that have not been committed...
+		consumer.commitSync(); // Commit the offsets that have not been committed...
 	}
     
     private void writeStatistic(CorrelationDetector detector, DetectionStatistic statistic, double streamStart) {
-		// TODO: Implement this method
+    	System.out.printf("detector stream id = %d,\n streamStart = %d,\n statistic = %d\n\n", 
+    			detector.getStreamId(), streamStart, statistic.getStatistic());
 	}
     
-    /*
+    /**
      * This method will search in an Ignite cache to find previous records that have been streamed.
      * The SeismicBand hash value from the record will be used to key the entry for caching.
      */
@@ -305,7 +257,7 @@ public class ConsumerKafka implements Runnable, Serializable {
     	return previousRecord;
     }
     
-    /*
+    /**
      * This method will store a record in an Ignite cache so it can be used for 
      * processing with the next block as that next block (from same band) comes in.
      */
