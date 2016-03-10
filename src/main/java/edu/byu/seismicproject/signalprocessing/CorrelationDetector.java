@@ -17,8 +17,15 @@ public class CorrelationDetector {
         //int offset = (int) Math.round(startSecond / dt);
     	//int npts = (int) Math.round(duration / dt);
         
-        templateData = combined.getData();
-        BLOCK_SIZE = templateData.length / 2;
+        //templateData = combined.getData();
+        //BLOCK_SIZE = templateData.length / 2;
+        
+        float[] tmpData = combined.getData();
+        BLOCK_SIZE = tmpData.length / 2;
+        
+        templateData = new float[BLOCK_SIZE];
+        int offset =  BLOCK_SIZE / 2;
+        System.arraycopy(tmpData, offset, templateData, 0, BLOCK_SIZE);
         
         //float[] tmpArray = sacTemplate.getData();
         //templateData = new float[npts];
@@ -48,9 +55,17 @@ public class CorrelationDetector {
             double crossCorrelation = 0;
             
             for (int k = 0; k < templateData.length; ++k) {
-                int m = j + k + offset;
+                int m = j + k + offset; // this is the movement of our two-block signal
+                int l = j + k; // this is the movement of our template signal
+                
+                // As far as I understand it, we are only calculating the positive lag
+                // 		in the cross correlation. That means that we have to stop once we reach the middle
+                //		of the second block of the two-block incoming signal...
+                if (m == data.length - offset)
+                	break;
+                
                 dataAutoCorrelation += data[m] * data[m];
-                crossCorrelation += data[m] * templateData[k];
+                crossCorrelation += data[m] * templateData[l];
             }
             
             double denom = Math.sqrt(dataAutoCorrelation * templateAutoCorrelation);
@@ -58,16 +73,15 @@ public class CorrelationDetector {
             result[j] = (float) (cc*cc);
         }
         return result;
-
     }
-
-    public DetectionStatistic produceStatistic(StreamSegment segment ){
+    
+    public DetectionStatistic produceStatistic(StreamSegment segment) {
         float[] data = segment.getData();
         float[] statistic = produceStatistic(data);
         
         int offset = BLOCK_SIZE / 2;
-        long dt = (long) segment.getSampleInterval();
-        long newStart = segment.getStartTime() + dt * offset;
+        double dt = segment.getSampleInterval();
+        double newStart = segment.getStartTime() + dt * offset;
         
         return new DetectionStatistic(segment.getId(), detectorid, newStart, dt, statistic);
     }
