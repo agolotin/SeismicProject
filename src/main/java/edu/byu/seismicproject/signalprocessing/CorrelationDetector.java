@@ -56,16 +56,9 @@ public class CorrelationDetector {
             
             for (int k = 0; k < templateData.length; ++k) {
                 int m = j + k + offset; // this is the movement of our two-block signal
-                int l = j + k; // this is the movement of our template signal
-                
-                // As far as I understand it, we are only calculating the positive lag
-                // 		in the cross correlation. That means that we have to stop once we reach the middle
-                //		of the second block of the two-block incoming signal...
-                if (m == data.length - offset)
-                	break;
                 
                 dataAutoCorrelation += data[m] * data[m];
-                crossCorrelation += data[m] * templateData[l];
+                crossCorrelation += data[m] * templateData[k];
             }
             
             double denom = Math.sqrt(dataAutoCorrelation * templateAutoCorrelation);
