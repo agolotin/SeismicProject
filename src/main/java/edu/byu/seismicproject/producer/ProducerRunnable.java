@@ -1,9 +1,9 @@
-package main.java.edu.byu.seismicproject.producer;
+package edu.byu.seismicproject.producer;
 
+import edu.byu.seismicproject.signalprocessing.StreamProducer;
+import edu.byu.seismicproject.signalprocessing.StreamSegment;
 import java.util.concurrent.ExecutionException;
 
-import main.java.edu.byu.seismicproject.signalprocessing.StreamProducer;
-import main.java.edu.byu.seismicproject.signalprocessing.StreamSegment;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;

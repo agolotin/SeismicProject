@@ -1,4 +1,4 @@
-package main.java.edu.byu.seismicproject.general.serialization;
+package edu.byu.seismicproject.general.serialization;
 
 import java.io.ByteArrayOutputStream;
 import java.util.Map;
@@ -9,9 +9,9 @@ import org.apache.kafka.common.serialization.Serializer;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
+import edu.byu.seismicproject.general.timeseries.SegmentCustom;
+import edu.byu.seismicproject.general.timeseries.TimeseriesCustom;
 
-import main.java.edu.byu.seismicproject.general.timeseries.SegmentCustom;
-import main.java.edu.byu.seismicproject.general.timeseries.TimeseriesCustom;
 
 /**
  * In order to use the TimeseriesCustom class to pass data from the ProducerKafka
