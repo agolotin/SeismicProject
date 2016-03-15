@@ -1,5 +1,6 @@
-package main.java.edu.byu.seismicproject.ignite.server;
+package edu.byu.seismicproject.ignite.server;
 
+import edu.byu.seismicproject.signalprocessing.DetectorHolder;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
@@ -11,8 +12,6 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 //import javax.cache.expiry.Duration;
 
 
-import main.java.edu.byu.seismicproject.signalprocessing.DetectorHolder;
-//import main.java.signalprocessing.StreamProducer;
 
 //import java.util.concurrent.*;
 

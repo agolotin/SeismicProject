@@ -1,4 +1,4 @@
-package main.java.edu.byu.seismicproject.consumer;
+package edu.byu.seismicproject.consumer;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -8,7 +8,6 @@ import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import main.java.edu.byu.seismicproject.consumer.ConsumerKafka;
 
 /*
  * Consumer run simply starts the ConsumerKafka instances desired.

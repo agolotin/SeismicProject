@@ -1,4 +1,4 @@
-package main.java.edu.byu.seismicproject.consumer;
+package edu.byu.seismicproject.consumer;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.nio.file.Files;

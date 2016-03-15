@@ -1,4 +1,4 @@
-package main.java.edu.byu.seismicproject.producer;
+package edu.byu.seismicproject.producer;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -6,10 +6,6 @@ import java.util.List;
 import java.util.Properties;
 
 import kafka.common.TopicExistsException;
-import main.java.edu.byu.seismicproject.general.band.SeismicBand;
-import main.java.edu.byu.seismicproject.producer.ProducerKafka;
-import main.java.edu.byu.seismicproject.signalprocessing.StreamIdentifier;
-import main.java.edu.byu.seismicproject.signalprocessing.StreamProducer;
 
 import java.text.*;
 import java.util.*;
@@ -20,6 +16,10 @@ import java.util.concurrent.TimeUnit;
 import org.apache.kafka.clients.producer.KafkaProducer;
 
 import com.google.common.primitives.Floats;
+import edu.byu.seismicproject.general.band.SeismicBand;
+import edu.byu.seismicproject.signalprocessing.StreamIdentifier;
+import edu.byu.seismicproject.signalprocessing.StreamProducer;
+import edu.byu.seismicproject.signalprocessing.ToyStreamProducer;
 
 import edu.iris.dmc.criteria.*;  
 import edu.iris.dmc.service.*;
@@ -197,7 +197,7 @@ public class ProducerKafka {
 					
 					final int secondsPerBlock = 5; // TODO: This has to be changed...
 					// Populate the streamer so we can discard the raw data block
-					StreamProducer streamer = new StreamProducer(id, rawDataPerPartition, startTime, endTime, 
+					StreamProducer streamer = new AnotherStreamProducer(id, rawDataPerPartition, startTime, endTime, 
 							secondsPerBlock, segment.getSamplerate());
 					// Create a runnable task
 					ProducerRunnable task = new ProducerRunnable(streamer, producer, topic, partitionNum);

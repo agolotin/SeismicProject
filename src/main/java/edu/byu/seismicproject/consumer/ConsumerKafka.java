@@ -1,5 +1,10 @@
-package main.java.edu.byu.seismicproject.consumer;
+package edu.byu.seismicproject.consumer;
 
+import edu.byu.seismicproject.ignite.server.IgniteCacheConfig;
+import edu.byu.seismicproject.signalprocessing.CorrelationDetector;
+import edu.byu.seismicproject.signalprocessing.DetectionStatistic;
+import edu.byu.seismicproject.signalprocessing.DetectorHolder;
+import edu.byu.seismicproject.signalprocessing.StreamSegment;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
@@ -7,23 +12,14 @@ import java.util.Properties;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.stream.StreamTransformer;
-import org.apache.ignite.stream.StreamVisitor;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 
-import main.java.edu.byu.seismicproject.ignite.server.IgniteCacheConfig;
-import main.java.edu.byu.seismicproject.signalprocessing.CorrelationDetector;
-import main.java.edu.byu.seismicproject.signalprocessing.DetectionStatistic;
-import main.java.edu.byu.seismicproject.signalprocessing.DetectorHolder;
-import main.java.edu.byu.seismicproject.signalprocessing.StreamSegment;
 
 @SuppressWarnings({"unchecked", "rawtypes", "serial"})
 public class ConsumerKafka implements Runnable, Serializable {
@@ -202,10 +198,10 @@ public class ConsumerKafka implements Runnable, Serializable {
 						}
 					}
 					else { // otherwise create a new detector and throw it into cache 
-						CorrelationDetector newDetector = new CorrelationDetector(combined.getId(), combined);
-						DetectorHolder detectorHolder = new DetectorHolder(newDetector);
+//						CorrelationDetector newDetector = new CorrelationDetector(combined.getId(), combined);
+//						DetectorHolder detectorHolder = new DetectorHolder(newDetector);
 						
-						detectorCache.put(String.valueOf(combined.getId().hashCode()), detectorHolder);
+//						detectorCache.put(String.valueOf(combined.getId().hashCode()), detectorHolder);
 					}
 				}
 			}

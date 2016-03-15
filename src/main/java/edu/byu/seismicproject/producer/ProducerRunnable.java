@@ -1,9 +1,9 @@
-package main.java.edu.byu.seismicproject.producer;
+package edu.byu.seismicproject.producer;
 
+import edu.byu.seismicproject.signalprocessing.StreamProducer;
+import edu.byu.seismicproject.signalprocessing.StreamSegment;
 import java.util.concurrent.ExecutionException;
 
-import main.java.edu.byu.seismicproject.signalprocessing.StreamProducer;
-import main.java.edu.byu.seismicproject.signalprocessing.StreamSegment;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -30,7 +30,7 @@ class ProducerRunnable implements Runnable {
 		try {
 			while (streamer.hasNext()) {
 				ProducerRecord<String, StreamSegment> producerData = 
-						new ProducerRecord<String, StreamSegment>(topic, partitionNum, null, streamer.getNext());
+						new ProducerRecord<>(topic, partitionNum, null, streamer.getNext());
 				this.producer.send(producerData).get(); // Right now let's block on a send...
 			}
 		} 

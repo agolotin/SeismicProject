@@ -1,4 +1,4 @@
-package main.java.edu.byu.seismicproject.general.timeseries;
+package edu.byu.seismicproject.general.timeseries;
 
 import edu.iris.dmc.fdsn.station.model.Channel;
 import edu.iris.dmc.timeseries.model.Segment;

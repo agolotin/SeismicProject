@@ -1,4 +1,4 @@
-package main.java.edu.byu.seismicproject.ignite.server;
+package edu.byu.seismicproject.ignite.server;
 
 //import java.io.File;
 
