@@ -1,16 +1,17 @@
-
 package edu.byu.seismicproject.signalprocessing;
 
 public class CorrelationDetector {
 
- 
-
-    public static final int BLOCK_SIZE = 72000;
     private final double templateAutoCorrelation;
     private final float[] templateData;
     private final StreamIdentifier streamId;
     private final DetectorInfo detectorInfo;
 
+    public static int BLOCK_SIZE = 72000;
+
+    static void setBlockSize(int blockSizeSamps) {
+        BLOCK_SIZE = blockSizeSamps;
+    }
 
     public CorrelationDetector(DetectorInfo di, StreamIdentifier id, float[] templateData) {
         this.templateData = templateData.clone();

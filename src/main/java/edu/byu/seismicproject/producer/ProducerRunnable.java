@@ -30,7 +30,7 @@ class ProducerRunnable implements Runnable {
 		try {
 			while (streamer.hasNext()) {
 				ProducerRecord<String, StreamSegment> producerData = 
-						new ProducerRecord<String, StreamSegment>(topic, partitionNum, null, streamer.getNext());
+						new ProducerRecord<>(topic, partitionNum, null, streamer.getNext());
 				this.producer.send(producerData).get(); // Right now let's block on a send...
 			}
 		} 

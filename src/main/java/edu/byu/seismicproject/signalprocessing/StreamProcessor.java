@@ -23,11 +23,12 @@ public class StreamProcessor {
     private final DetectorHolder detectors;
     private final DetectionStatisticWriter statisticWriter;
     private final DetectionStatisticScanner statisticScanner;
+    private static boolean writeStatistics = false;
 
     StreamProcessor(DetectorHolder detectors, StreamIdentifier id) throws FileNotFoundException {
         this.id = id;
         this.detectors = detectors;
-        statisticWriter = new DetectionStatisticWriter(detectors);
+        statisticWriter = writeStatistics ? new DetectionStatisticWriter(detectors) : null;
         boolean triggerOnlyOnCorrelators = true;
         statisticScanner = new DetectionStatisticScanner(triggerOnlyOnCorrelators);
     }
@@ -36,13 +37,15 @@ public class StreamProcessor {
         printBlockStartTime(segment);
         if (previous != null) {
             StreamSegment combined = StreamSegment.combine(segment, previous);
-            detectors.getDetectors().stream().filter((detector) -> (detector.isCompatibleWith(combined))).map((detector) -> {
-                DetectionStatistic statistic = detector.produceStatistic(combined);
-                statisticWriter.writeStatistic(detector, statistic, streamStart);
-                return statistic;
-            }).forEach((statistic) -> {
-                statisticScanner.addStatistic(statistic);
-            });
+            for (CorrelationDetector detector : detectors.getDetectors()) {
+                if (detector.isCompatibleWith(combined)) {
+                    DetectionStatistic statistic = detector.produceStatistic(combined);
+                    if (writeStatistics) {
+                        statisticWriter.writeStatistic(detector, statistic, streamStart);
+                    }
+                    statisticScanner.addStatistic(statistic);
+                }
+            }
             Collection<TriggerData> triggers = statisticScanner.scanForTriggers();
             if (!triggers.isEmpty()) {
                 processAllTriggers(triggers);
@@ -53,10 +56,11 @@ public class StreamProcessor {
 
         previous = segment;
     }
-    
-    public void close()
-    {
-        statisticWriter.close();
+
+    public void close() {
+        if (writeStatistics) {
+            statisticWriter.close();
+        }
     }
 
     private void printBlockStartTime(StreamSegment segment) {
@@ -82,6 +86,10 @@ public class StreamProcessor {
         triggers.stream().forEach((td) -> {
             System.out.println(td);
         });
+    }
+
+    public static void writeDetectionStatistics(boolean doWrite) {
+        writeStatistics = doWrite;
     }
 
 }
