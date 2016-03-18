@@ -7,15 +7,16 @@ package main.java.edu.byu.seismicproject.producer;
 
 import com.oregondsp.signalProcessing.filter.iir.Butterworth;
 import com.oregondsp.signalProcessing.filter.iir.PassbandType;
+
+import main.java.edu.byu.seismicproject.signalprocessing.IStreamProducer;
 import main.java.edu.byu.seismicproject.signalprocessing.StreamIdentifier;
-import main.java.edu.byu.seismicproject.signalprocessing.StreamProducer;
 import main.java.edu.byu.seismicproject.signalprocessing.StreamSegment;
 
 /**
  *
  * @author dodge1
  */
-public class AnotherStreamProducer implements StreamProducer {
+public class AnotherStreamProducer implements IStreamProducer {
 
     private final Butterworth filter;
     private float[] dataArray;

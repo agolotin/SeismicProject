@@ -18,7 +18,7 @@ import main.java.edu.byu.seismicproject.general.band.SeismicBand;
  * entire amount to be processed in an internal array and makes it available in blocks
  * @author dodge1
  */
-public class ToyStreamProducer  implements StreamProducer{
+public class ToyStreamProducer  implements IStreamProducer{
 
  private final Butterworth filter;
     private final float[] dataArray;
@@ -43,7 +43,7 @@ public class ToyStreamProducer  implements StreamProducer{
         float highCorner = 8;
         id = new StreamIdentifier("IU", "KBS", "BHZ", "00", new SeismicBand(1, order, lowCorner, highCorner));
         ArrayList<String> lines = new ArrayList<>();
-        try (InputStream in = getClass().getResourceAsStream("../../../../../resources/detector/KBS.BHZ00.2007.298.01.13.03.txt")) {
+        try (InputStream in = getClass().getResourceAsStream("/main/resources/detector/KBS.BHZ00.2007.298.01.13.03.txt")) {
 
             try (InputStreamReader isr = new InputStreamReader(in)) {
                 try (BufferedReader br = new BufferedReader(isr)) {

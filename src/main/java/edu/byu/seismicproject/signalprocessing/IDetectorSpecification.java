@@ -1,7 +1,7 @@
 package main.java.edu.byu.seismicproject.signalprocessing;
 
 
-public interface DetectorSpecification {
+public interface IDetectorSpecification {
 
     public DetectorType            getDetectorType();                      // instance of enumeration denoting type of detector
 

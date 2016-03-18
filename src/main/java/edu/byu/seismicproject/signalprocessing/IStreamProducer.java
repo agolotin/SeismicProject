@@ -2,7 +2,7 @@
 package main.java.edu.byu.seismicproject.signalprocessing;
 
 
-public interface StreamProducer {
+public interface IStreamProducer {
      boolean hasNext();
 
      StreamSegment getNext();

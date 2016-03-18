@@ -1,6 +1,6 @@
 package main.java.edu.byu.seismicproject.producer;
 
-import main.java.edu.byu.seismicproject.signalprocessing.StreamProducer;
+import main.java.edu.byu.seismicproject.signalprocessing.IStreamProducer;
 import main.java.edu.byu.seismicproject.signalprocessing.StreamSegment;
 import java.util.concurrent.ExecutionException;
 
@@ -11,14 +11,14 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 @SuppressWarnings({"rawtypes","unchecked"})
 class ProducerRunnable implements Runnable {
 	
-	private final StreamProducer streamer;
+	private final IStreamProducer streamer;
 	
 	private final KafkaProducer producer;
 	private final String topic;
 	private final int partitionNum;
 	
 	
-	public ProducerRunnable(StreamProducer streamer, KafkaProducer producer, String topic, int partitionNum) {
+	public ProducerRunnable(IStreamProducer streamer, KafkaProducer producer, String topic, int partitionNum) {
 		this.streamer = streamer;
 		this.producer = producer;
 		this.topic = topic;

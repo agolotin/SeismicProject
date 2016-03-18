@@ -5,11 +5,11 @@ public class DetectorInfo {
 
     private final int detectorid;
 
-    private final DetectorSpecification specification;
+    private final IDetectorSpecification specification;
     private final double detectorDelayInSeconds;
 
     public DetectorInfo(int detectorid,
-            DetectorSpecification specification,
+            IDetectorSpecification specification,
             double detectorDelayInSeconds) {
         this.detectorid = detectorid;
         this.specification = specification;

@@ -64,6 +64,7 @@ public class DetectionStatistic {
             DetectionStatistic ds = timeMap.get(v);
             if (first == null) {
                 first = ds;
+                //TODO: break;
             }
         }
         float[] array = new float[totalLength];

@@ -19,26 +19,24 @@ public class DetectorHolder {
     public DetectorHolder() throws Exception {
         float threshold = 0.6f;
         float blackout = 3;
-        DetectorSpecification spec = new CorrelationDetectorSpecification(threshold, blackout);
+        IDetectorSpecification spec = new CorrelationDetectorSpecification(threshold, blackout);
         StreamIdentifier id = new StreamIdentifier("IU", "KBS", "BHZ", "00", new SeismicBand(1, 4, 2, 8));
         detectors = new ArrayList<>();
         // These data are already filtered into the stream pass band of 2 - 8 Hz.
         
-        InputStream fish = getClass().getResourceAsStream("../../../../../resources/detector/template1.txt");
-        
-        try (InputStream in = getClass().getResourceAsStream("../../../../../resources/detector/template1.txt")) {
+        try (InputStream in = getClass().getResourceAsStream("/main/resources/detector/template1.txt")) {
             detectors.add(makeDetector(in, 5, 15, spec, id));
         }
 
-        try (InputStream in = getClass().getResourceAsStream("../../../../../resources/detector/template2.txt")) {
+        try (InputStream in = getClass().getResourceAsStream("/main/resources/detector/template2.txt")) {
             detectors.add(makeDetector(in, 5, 30, spec, id));
         }
-        try (InputStream in = getClass().getResourceAsStream("../../../../../resources/detector/template3.txt")) {
+        try (InputStream in = getClass().getResourceAsStream("/main/resources/detector/template3.txt")) {
             detectors.add(makeDetector(in, 7, 30, spec, id));
         }
     }
 
-    private CorrelationDetector makeDetector(InputStream is, double startSecond, double duration, DetectorSpecification spec, StreamIdentifier id) throws IOException {
+    private CorrelationDetector makeDetector(InputStream is, double startSecond, double duration, IDetectorSpecification spec, StreamIdentifier id) throws IOException {
         double dt = 0.05; // This is just an example which is correct for KBS BHZ
         ArrayList<String> lines = new ArrayList<>();
         try (InputStreamReader isr = new InputStreamReader(is)) {

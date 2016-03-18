@@ -18,7 +18,7 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import com.google.common.primitives.Floats;
 import main.java.edu.byu.seismicproject.general.band.SeismicBand;
 import main.java.edu.byu.seismicproject.signalprocessing.StreamIdentifier;
-import main.java.edu.byu.seismicproject.signalprocessing.StreamProducer;
+import main.java.edu.byu.seismicproject.signalprocessing.IStreamProducer;
 import main.java.edu.byu.seismicproject.signalprocessing.ToyStreamProducer;
 
 import edu.iris.dmc.criteria.*;  
@@ -197,7 +197,7 @@ public class ProducerKafka {
 					
 					final int secondsPerBlock = 5; // TODO: This has to be changed...
 					// Populate the streamer so we can discard the raw data block
-					StreamProducer streamer = new AnotherStreamProducer(id, rawDataPerPartition, startTime, endTime, 
+					IStreamProducer streamer = new AnotherStreamProducer(id, rawDataPerPartition, startTime, endTime, 
 							secondsPerBlock, segment.getSamplerate());
 					// Create a runnable task
 					ProducerRunnable task = new ProducerRunnable(streamer, producer, topic, partitionNum);
