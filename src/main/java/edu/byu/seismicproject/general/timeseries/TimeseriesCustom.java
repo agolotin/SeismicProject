@@ -3,6 +3,9 @@ package main.java.edu.byu.seismicproject.general.timeseries;
 import edu.iris.dmc.fdsn.station.model.Channel;
 import edu.iris.dmc.timeseries.model.Segment;
 
+/*
+ * REVIEWME: This class is useless right now
+ */
 /**
  * The reason we have to create our own Timeseries and Segment classes is because Google Kryo (or anything)
  * does not serialize the java.util.login.Logger that is present in both Timeseries and Segment classes.

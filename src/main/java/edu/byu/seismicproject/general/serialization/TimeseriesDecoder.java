@@ -12,7 +12,9 @@ import com.esotericsoftware.kryo.serializers.JavaSerializer;
 import main.java.edu.byu.seismicproject.general.timeseries.SegmentCustom;
 import main.java.edu.byu.seismicproject.general.timeseries.TimeseriesCustom;
 
-
+/*
+ * REVIEWME: This class is useless right now
+ */
 /**
  * In order to use the TimeseriesCustom class to pass data from the ProducerKafka
  * to the ConsumerKafka, we need a custom Serializer and a custom Deserializer.

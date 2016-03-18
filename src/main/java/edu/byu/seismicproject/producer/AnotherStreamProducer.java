@@ -27,19 +27,19 @@ public class AnotherStreamProducer implements IStreamProducer {
     private final double startTime;
     private final double sampleInterval;
     private final StreamIdentifier id;
-    private final StreamSegment[] filteredDataBlocks;
 
     public AnotherStreamProducer(StreamIdentifier id, float[] rawData,
             long startTime, long endTime,
-            int secondsPerBlock, float sampleRate) {
+            int minutesPerBlock, float sampleRate) {
 
+    	dataArray = rawData;
         int dataLength = rawData.length;
         this.startTime = startTime;
 
         // NOTE: https://courses.engr.illinois.edu/ece110/content/courseNotes/files/?samplingAndQuantization#SAQ-SMP
-        this.sampleInterval = 1.0 / sampleRate; // this is how many seconds there are per sample
+        this.sampleInterval = 1.0 / sampleRate;
 
-        this.blockSizeSamps = (int) (secondsPerBlock * sampleRate);//blockSizeSamps;
+        this.blockSizeSamps = (int) (minutesPerBlock * 60 * sampleRate);
 
         this.numBlocks = dataLength / blockSizeSamps;
         this.currentBlock = 0;
@@ -52,34 +52,6 @@ public class AnotherStreamProducer implements IStreamProducer {
         double highCorner = id.getBand().getHighCorner();
 
         filter = new Butterworth(order, PassbandType.BANDPASS, lowCorner, highCorner, sampleInterval);
-
-        filteredDataBlocks = new StreamSegment[numBlocks];
-        this.createFilteredBlocksFromRawData(rawData);
-    }
-
-    /**
-     * This function generates a list of StreamSegment blocks that will be
-     * processed by the Ignite client. This is done in order for us to discard
-     * the raw data and keep only the filtered data stream in blocks FIXME: Make
-     * sure we are setting the start and end time here correctly....it seems
-     * like we are not...
-     *
-     * @param rawData raw data stream of incoming data
-     */
-    private void createFilteredBlocksFromRawData(float[] rawData) {
-        for (int i = 0; i < numBlocks; i++) {
-
-            float[] block = new float[blockSizeSamps];
-            int offset = blockSizeSamps * i;
-            System.arraycopy(rawData, offset, block, 0, blockSizeSamps);
-
-            // Filter new data block
-            filter.filter(block);
-
-            // TODO: make sure this double to long conversion won't screw things up
-            double blockStartTime = startTime + (offset * sampleInterval);
-            filteredDataBlocks[i] = new StreamSegment(id, blockStartTime, sampleInterval, block);
-        }
     }
 
     @Override

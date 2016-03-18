@@ -1,5 +1,8 @@
 package main.java.edu.byu.seismicproject.ignite.process;
 
+/*
+ * REVIEWME: This class is useless right now
+ */
 //TODO: these commented imports can probably be removed
 //import java.util.Map.Entry;
 //import java.util.Arrays;

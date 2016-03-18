@@ -3,6 +3,9 @@ package main.java.edu.byu.seismicproject.general.timeseries;
 import edu.iris.dmc.timeseries.model.Segment;
 import java.sql.Timestamp;
 
+/*
+ * REVIEWME: This class is useless right now
+ */
 
 /**
  * Segment class to go with our implementation of the Timeseries class.

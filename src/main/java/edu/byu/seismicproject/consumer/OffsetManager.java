@@ -7,6 +7,9 @@ import java.nio.file.Paths;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/*
+ * REVIEWME: This class is useless right now
+ */
 /**
  * The partition offset are stored in an external storage. In this case in a file system.
  */

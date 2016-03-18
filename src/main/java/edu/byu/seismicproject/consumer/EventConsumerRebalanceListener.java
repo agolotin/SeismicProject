@@ -6,6 +6,9 @@ import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.common.TopicPartition;
 
+/*
+ * REVIEWME: This class is useless right now
+ */
 
 @SuppressWarnings("rawtypes")
 public class EventConsumerRebalanceListener implements ConsumerRebalanceListener {

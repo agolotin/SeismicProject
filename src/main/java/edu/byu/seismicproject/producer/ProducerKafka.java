@@ -12,15 +12,16 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
 
 import com.google.common.primitives.Floats;
+
 import main.java.edu.byu.seismicproject.general.band.SeismicBand;
 import main.java.edu.byu.seismicproject.signalprocessing.StreamIdentifier;
 import main.java.edu.byu.seismicproject.signalprocessing.IStreamProducer;
-import main.java.edu.byu.seismicproject.signalprocessing.ToyStreamProducer;
-
 import edu.iris.dmc.criteria.*;  
 import edu.iris.dmc.service.*;
 import edu.iris.dmc.timeseries.model.Segment;
@@ -37,8 +38,10 @@ public class ProducerKafka {
 	private final String topic;
 	private final String[] stationList;
 	private final SeismicBand[] bands;
+	private final int minutesPerBlock; // Assume 60 minutes per block
 
 	private final KafkaProducer producer;
+	
     
    	/**
    	 * Entry point for KafkaProducer. 
@@ -53,17 +56,19 @@ public class ProducerKafka {
     		System.exit(1);
     	}
     	
+    	// Parse input arguments
     	Properties inputProps = new Properties();
     	FileInputStream in = new FileInputStream(args[0]);
     	inputProps.load(in);
     	in.close();
-		
+    	
+    	// Create a new instance of producer
         ProducerKafka prod = new ProducerKafka(inputProps);
         
         try {
             prod.runKafkaProducer();
         } catch (TopicExistsException | IOException | InterruptedException e) {
-            e.printStackTrace();
+            Logger.getLogger(ProducerKafka.class.getName()).log(Level.SEVERE, null, e);
         }
     }
 
@@ -77,11 +82,10 @@ public class ProducerKafka {
     	
     	// TODO: the constructor will take a list of stations, which will be topic later on
     	
-    	stationList = ((String) inputProps.get("stations")).split(",");
-
-		topic = (String) inputProps.get("topics");
-		
+    	stationList = inputProps.getProperty("stations").split(",");
+		topic = inputProps.getProperty("topics");
     	bands = this.getBands(inputProps);
+    	minutesPerBlock = Integer.parseInt(inputProps.getProperty("minutes_per_block"));
         
         // Define producer properties
         Properties props = new Properties();
@@ -101,7 +105,7 @@ public class ProducerKafka {
      * Reads the input object and sets the of bands required to process streams
      */
     private SeismicBand[] getBands(Properties props) {
-		String[] _bands = ((String) props.get("bands")).split(";");
+		String[] _bands = props.getProperty("bands").split(";");
 		
 		SeismicBand[] rtrn = new SeismicBand[_bands.length];
 		
@@ -140,7 +144,7 @@ public class ProducerKafka {
         // We are waiting for all of the runnables to finish sending messages and then we can close the producer
         for (ExecutorService producerRunnables : producers) {
         	producerRunnables.shutdown();
-        	producerRunnables.awaitTermination(365, TimeUnit.DAYS); 
+        	producerRunnables.awaitTermination(365, TimeUnit.DAYS);
         }
         this.producer.close();
     }
@@ -155,7 +159,8 @@ public class ProducerKafka {
 	 * @param numPartitions
 	 * @throws InterruptedException 
 	 */
-	private void sendSegmentsToPartitions(Timeseries timeseries, List<ExecutorService> producers, int numPartitions) throws InterruptedException {
+	private void sendSegmentsToPartitions(Timeseries timeseries, 
+			List<ExecutorService> producers, int numPartitions) throws InterruptedException {
 		
 		// The problem is that we can't put multiple segments into one. Every chunk has a time frame associated with it. 
 		// I will have to send data in chunks...maybe. Consumer is configured to handle this, so maybe I will just put it
@@ -167,9 +172,8 @@ public class ProducerKafka {
 				bands.length * timeseries.getSegments().size());
 		
 		for (Segment segment : timeseries.getSegments()) {
-			
 			// ================ GET PRELIMINARY INFO ===================== ||
-			long endTime, startTime = segment.getStartTime().getTime() / 1000; // This will return time in seconds
+			long endTime, startTime = segment.getStartTime().getTime() / 1000; 
 			long secondsPerPartition = (long) ((segment.getSampleCount() / segment.getSamplerate()) / numPartitions);
 			
 			// TODO: What if there are multiple types of data in multiple lists...
@@ -189,16 +193,15 @@ public class ProducerKafka {
 				System.arraycopy(data, samplesPerPartition * partitionNum, 
 						rawDataPerPartition, 0, samplesPerPartition);
 				
-				// Go through the list of bands and create a new runnable for every band.....
+				// Create a new Runnable for every band
 				for (SeismicBand _band : bands) {
 					// Create a new id for the block depending on the band size
 					StreamIdentifier id = new StreamIdentifier(timeseries.getNetworkCode(), timeseries.getStationCode(), 
 							timeseries.getChannelCode(), timeseries.getLocation(), _band);
 					
-					final int secondsPerBlock = 5; // TODO: This has to be changed...
 					// Populate the streamer so we can discard the raw data block
 					IStreamProducer streamer = new AnotherStreamProducer(id, rawDataPerPartition, startTime, endTime, 
-							secondsPerBlock, segment.getSamplerate());
+							minutesPerBlock, segment.getSamplerate());
 					// Create a runnable task
 					ProducerRunnable task = new ProducerRunnable(streamer, producer, topic, partitionNum);
 					// Submit the task
@@ -260,7 +263,7 @@ public class ProducerKafka {
 		Date endDate = null;
 		try {
 			startDate = dateformat.parse("2005-02-17T00:00:00");
-			endDate = dateformat.parse("2005-02-17T00:10:00");
+			endDate = dateformat.parse("2005-02-17T03:00:00");
 		} catch (ParseException e) {
 			e.printStackTrace();
 		}
@@ -284,7 +287,7 @@ public class ProducerKafka {
 		try {
 			timeSeriesCollection = waveformService.fetch(criteria);
 		} catch (Exception e) {
-			e.printStackTrace();
+            Logger.getLogger(ProducerKafka.class.getName()).log(Level.SEVERE, null, e);
 		}
 		return timeSeriesCollection;
 	}
