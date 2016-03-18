@@ -22,14 +22,14 @@ public class DetectorHolder {
         StreamIdentifier id = new StreamIdentifier("IU", "KBS", "BHZ", "00", new SeismicBand(1, 4, 2, 8));
         detectors = new ArrayList<>();
         // These data are already filtered into the stream pass band of 2 - 8 Hz.
-        try (InputStream in = getClass().getResourceAsStream("/detector/template1.txt")) {
+        try (InputStream in = getClass().getResourceAsStream("/main/resources/detector/template1.txt")) {
             detectors.add(makeDetector(in, 5, 15, spec, id));
         }
 
-        try (InputStream in = getClass().getResourceAsStream("/detector/template2.txt")) {
+        try (InputStream in = getClass().getResourceAsStream("/main/resources/detector/template2.txt")) {
             detectors.add(makeDetector(in, 5, 30, spec, id));
         }
-        try (InputStream in = getClass().getResourceAsStream("/detector/template3.txt")) {
+        try (InputStream in = getClass().getResourceAsStream("/main/resources/detector/template3.txt")) {
             detectors.add(makeDetector(in, 7, 30, spec, id));
         }
     }
