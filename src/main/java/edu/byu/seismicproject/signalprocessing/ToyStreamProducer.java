@@ -41,7 +41,7 @@ public class ToyStreamProducer  implements StreamProducer{
         float highCorner = 8;
         id = new StreamIdentifier("IU", "KBS", "BHZ", "00", new SeismicBand(1, order, lowCorner, highCorner));
         ArrayList<String> lines = new ArrayList<>();
-        try (InputStream in = getClass().getResourceAsStream("/detector/KBS.BHZ00.2007.298.01.13.03.txt")) {
+        try (InputStream in = getClass().getResourceAsStream("/main/resources/detector/KBS.BHZ00.2007.298.01.13.03.txt")) {
 
             try (InputStreamReader isr = new InputStreamReader(in)) {
                 try (BufferedReader br = new BufferedReader(isr)) {
