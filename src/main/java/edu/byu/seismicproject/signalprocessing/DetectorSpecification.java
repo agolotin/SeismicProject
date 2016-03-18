@@ -1,4 +1,4 @@
-package edu.byu.seismicproject.signalprocessing;
+package main.java.edu.byu.seismicproject.signalprocessing;
 
 
 public interface DetectorSpecification {

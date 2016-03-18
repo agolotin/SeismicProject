@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package edu.byu.seismicproject.signalprocessing;
+package main.java.edu.byu.seismicproject.signalprocessing;
 
 import java.io.FileNotFoundException;
 import java.util.Calendar;

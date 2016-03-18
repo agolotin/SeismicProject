@@ -1,4 +1,4 @@
-package edu.byu.seismicproject.ignite.process;
+package main.java.edu.byu.seismicproject.ignite.process;
 
 //TODO: these commented imports can probably be removed
 //import java.util.Map.Entry;

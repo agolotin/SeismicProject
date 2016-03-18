@@ -1,4 +1,4 @@
-package edu.byu.seismicproject.general.serialization;
+package main.java.edu.byu.seismicproject.general.serialization;
 
 import java.io.ByteArrayOutputStream;
 import java.util.Map;
@@ -9,7 +9,7 @@ import org.apache.kafka.common.serialization.Serializer;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
-import edu.byu.seismicproject.signalprocessing.StreamSegment;
+import main.java.edu.byu.seismicproject.signalprocessing.StreamSegment;
 
 
 public class StreamSegmentEncoder implements Serializer<StreamSegment> {

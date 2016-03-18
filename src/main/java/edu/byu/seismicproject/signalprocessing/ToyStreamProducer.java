@@ -1,9 +1,9 @@
 
-package edu.byu.seismicproject.signalprocessing;
+package main.java.edu.byu.seismicproject.signalprocessing;
 
 import com.oregondsp.signalProcessing.filter.iir.Butterworth;
 import com.oregondsp.signalProcessing.filter.iir.PassbandType;
-import edu.byu.seismicproject.general.band.SeismicBand;
+import main.java.edu.byu.seismicproject.general.band.SeismicBand;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;

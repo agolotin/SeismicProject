@@ -1,4 +1,4 @@
-package edu.byu.seismicproject.general.band;
+package main.java.edu.byu.seismicproject.general.band;
 
 import java.io.Serializable;
 

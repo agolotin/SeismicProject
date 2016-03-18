@@ -1,10 +1,10 @@
-package edu.byu.seismicproject.consumer;
+package main.java.edu.byu.seismicproject.consumer;
 
-import edu.byu.seismicproject.ignite.server.IgniteCacheConfig;
-import edu.byu.seismicproject.signalprocessing.CorrelationDetector;
-import edu.byu.seismicproject.signalprocessing.DetectionStatistic;
-import edu.byu.seismicproject.signalprocessing.DetectorHolder;
-import edu.byu.seismicproject.signalprocessing.StreamSegment;
+import main.java.edu.byu.seismicproject.ignite.server.IgniteCacheConfig;
+import main.java.edu.byu.seismicproject.signalprocessing.CorrelationDetector;
+import main.java.edu.byu.seismicproject.signalprocessing.DetectionStatistic;
+import main.java.edu.byu.seismicproject.signalprocessing.DetectorHolder;
+import main.java.edu.byu.seismicproject.signalprocessing.StreamSegment;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;

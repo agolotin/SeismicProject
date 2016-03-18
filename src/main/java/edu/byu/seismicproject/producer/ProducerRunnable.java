@@ -1,7 +1,7 @@
-package edu.byu.seismicproject.producer;
+package main.java.edu.byu.seismicproject.producer;
 
-import edu.byu.seismicproject.signalprocessing.StreamProducer;
-import edu.byu.seismicproject.signalprocessing.StreamSegment;
+import main.java.edu.byu.seismicproject.signalprocessing.StreamProducer;
+import main.java.edu.byu.seismicproject.signalprocessing.StreamSegment;
 import java.util.concurrent.ExecutionException;
 
 

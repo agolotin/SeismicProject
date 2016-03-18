@@ -1,4 +1,4 @@
-package edu.byu.seismicproject.producer;
+package main.java.edu.byu.seismicproject.producer;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -16,10 +16,10 @@ import java.util.concurrent.TimeUnit;
 import org.apache.kafka.clients.producer.KafkaProducer;
 
 import com.google.common.primitives.Floats;
-import edu.byu.seismicproject.general.band.SeismicBand;
-import edu.byu.seismicproject.signalprocessing.StreamIdentifier;
-import edu.byu.seismicproject.signalprocessing.StreamProducer;
-import edu.byu.seismicproject.signalprocessing.ToyStreamProducer;
+import main.java.edu.byu.seismicproject.general.band.SeismicBand;
+import main.java.edu.byu.seismicproject.signalprocessing.StreamIdentifier;
+import main.java.edu.byu.seismicproject.signalprocessing.StreamProducer;
+import main.java.edu.byu.seismicproject.signalprocessing.ToyStreamProducer;
 
 import edu.iris.dmc.criteria.*;  
 import edu.iris.dmc.service.*;

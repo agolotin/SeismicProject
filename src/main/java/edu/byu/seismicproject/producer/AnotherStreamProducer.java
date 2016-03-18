@@ -3,13 +3,13 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package edu.byu.seismicproject.producer;
+package main.java.edu.byu.seismicproject.producer;
 
 import com.oregondsp.signalProcessing.filter.iir.Butterworth;
 import com.oregondsp.signalProcessing.filter.iir.PassbandType;
-import edu.byu.seismicproject.signalprocessing.StreamIdentifier;
-import edu.byu.seismicproject.signalprocessing.StreamProducer;
-import edu.byu.seismicproject.signalprocessing.StreamSegment;
+import main.java.edu.byu.seismicproject.signalprocessing.StreamIdentifier;
+import main.java.edu.byu.seismicproject.signalprocessing.StreamProducer;
+import main.java.edu.byu.seismicproject.signalprocessing.StreamSegment;
 
 /**
  *

@@ -1,4 +1,4 @@
-package edu.byu.seismicproject.general.serialization;
+package main.java.edu.byu.seismicproject.general.serialization;
 import java.io.ByteArrayInputStream;
 import java.util.Map;
 import java.util.zip.InflaterInputStream;
@@ -8,7 +8,7 @@ import org.apache.kafka.common.serialization.Deserializer;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
-import edu.byu.seismicproject.signalprocessing.StreamSegment;
+import main.java.edu.byu.seismicproject.signalprocessing.StreamSegment;
 
 
 /**

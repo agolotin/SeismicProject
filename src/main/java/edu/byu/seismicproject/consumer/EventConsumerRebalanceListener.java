@@ -1,4 +1,4 @@
-package edu.byu.seismicproject.consumer;
+package main.java.edu.byu.seismicproject.consumer;
 
 import java.util.Collection;
 

@@ -1,7 +1,7 @@
 
-package edu.byu.seismicproject.signalprocessing;
+package main.java.edu.byu.seismicproject.signalprocessing;
 
-import edu.byu.seismicproject.general.band.SeismicBand;
+import main.java.edu.byu.seismicproject.general.band.SeismicBand;
 
 
 public class StreamIdentifier {

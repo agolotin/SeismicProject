@@ -1,6 +1,6 @@
-package edu.byu.seismicproject.ignite.server;
+package main.java.edu.byu.seismicproject.ignite.server;
 
-import edu.byu.seismicproject.signalprocessing.DetectorHolder;
+import main.java.edu.byu.seismicproject.signalprocessing.DetectorHolder;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;

@@ -1,5 +1,4 @@
-
-package edu.byu.seismicproject.signalprocessing;
+package main.java.edu.byu.seismicproject.signalprocessing;
 
 import java.util.Map;
 import java.util.TreeMap;
