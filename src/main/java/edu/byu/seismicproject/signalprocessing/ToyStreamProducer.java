@@ -1,14 +1,16 @@
 
 package main.java.edu.byu.seismicproject.signalprocessing;
 
-import com.oregondsp.signalProcessing.filter.iir.Butterworth;
-import com.oregondsp.signalProcessing.filter.iir.PassbandType;
-import main.java.edu.byu.seismicproject.general.band.SeismicBand;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+
+import com.oregondsp.signalProcessing.filter.iir.Butterworth;
+import com.oregondsp.signalProcessing.filter.iir.PassbandType;
+
+import main.java.edu.byu.seismicproject.general.band.SeismicBand;
 
 /**
  * The ToyStreamProducer class is intended to emulate the mechanics of a system that acquires continuous
@@ -41,7 +43,7 @@ public class ToyStreamProducer  implements StreamProducer{
         float highCorner = 8;
         id = new StreamIdentifier("IU", "KBS", "BHZ", "00", new SeismicBand(1, order, lowCorner, highCorner));
         ArrayList<String> lines = new ArrayList<>();
-        try (InputStream in = getClass().getResourceAsStream("/main/resources/detector/KBS.BHZ00.2007.298.01.13.03.txt")) {
+        try (InputStream in = getClass().getResourceAsStream("../../../../../resources/detector/KBS.BHZ00.2007.298.01.13.03.txt")) {
 
             try (InputStreamReader isr = new InputStreamReader(in)) {
                 try (BufferedReader br = new BufferedReader(isr)) {
