@@ -1,7 +1,6 @@
 package main.java.edu.byu.seismicproject.consumer;
 
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -13,7 +12,7 @@ import java.util.logging.Logger;
 import main.java.edu.byu.seismicproject.signalprocessing.processing.SeismicStreamProcessor;
 
 
-/*
+/**
  * Consumer run simply starts the ConsumerKafka instances desired.
  * It currently runs only one instance, but could easily be configured
  * to run as many as needed.
@@ -28,11 +27,12 @@ public class ConsumerRun {
 	private final List<ExecutorService> executors;
 	
 	public ConsumerRun(Properties inputProps) {
-		allTopics = ((String) inputProps.get("topics")).split(",");
+		allTopics = inputProps.getProperty("topics").split(",");
 		String[] tempNumConsumers = ((String) inputProps.get("numconsumers")).split(",");
 		
 		if (tempNumConsumers.length != allTopics.length) {
-			System.out.println("Number of topics does not match the size of the list of consumers");
+			String msg = "Number of topics does not match the size of the list of consumers";
+            Logger.getLogger(ConsumerRun.class.getName()).log(Level.SEVERE, msg);
 			System.exit(1);
 		}
 		
@@ -41,14 +41,13 @@ public class ConsumerRun {
 			allNumConsumers[i] = Integer.parseInt(tempNumConsumers[i]);
 		}
 		
-		groupId = (String) inputProps.get("groupid");
+		groupId = inputProps.getProperty("groupid");
 		executors = new ArrayList<ExecutorService>();
 	}
 
 	/**
 	 * Entry point for ConsumerRun, calls runConsumers function.
 	 * @param The input argument is a .properties file
-	 * @throws IOException
 	 */
 	public static void main(String[] args) {
 		// In the args input file we specify the number of consumers per topic, 
@@ -81,18 +80,16 @@ public class ConsumerRun {
 	 */
 	public void runConsumers()
 	{
-		for (String topic : allTopics) {
-			for (Integer singleNumConsumers : allNumConsumers) {
-				final ExecutorService executor = Executors.newFixedThreadPool(singleNumConsumers);
-				//final List<ConsumerKafka> consumers = new ArrayList<>();
+		for (int topicNum = 0; topicNum < allTopics.length; topicNum++) {
+			final ExecutorService executor = Executors.newFixedThreadPool(allNumConsumers[topicNum]);
+			//final List<ConsumerKafka> consumers = new ArrayList<>();
 
-				for (int i = 0; i < singleNumConsumers; i++) {
-					ConsumerKafka consumer = new ConsumerKafka(groupId, topic, i);
-					//consumers.add(consumer);
-					executor.submit(consumer);
-				}
-				executors.add(executor);
+			for (int consumerNum = 0; consumerNum < allNumConsumers[topicNum]; consumerNum++) {
+				ConsumerKafka consumer = new ConsumerKafka(groupId, allTopics[topicNum], consumerNum);
+				//consumers.add(consumer);
+				executor.submit(consumer);
 			}
+			executors.add(executor);
 		}
 	}
 }

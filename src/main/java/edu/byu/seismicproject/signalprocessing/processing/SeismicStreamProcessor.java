@@ -27,10 +27,13 @@ public class SeismicStreamProcessor {
     
     public static void BootstrapDetectors() {
         try {
-        	IgniteCache<String, DetectorHolder> _detectorCache = Ignition.start().getOrCreateCache(IgniteCacheConfig.detectorHolderCache());
+        	Ignite ignite = Ignition.start();
+        	IgniteCache<String, DetectorHolder> _detectorCache = ignite.getOrCreateCache(IgniteCacheConfig.detectorHolderCache());
 			DetectorHolder bootstrapDetectors = new DetectorHolder();
 			StreamIdentifier id = new StreamIdentifier("IU", "KBS", "BHZ", "00", new SeismicBand(2, 4, 2, 8));
 			_detectorCache.put(String.valueOf(id.hashCode()), bootstrapDetectors);
+			
+			ignite.close();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

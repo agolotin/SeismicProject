@@ -1,10 +1,12 @@
 
 package main.java.edu.byu.seismicproject.signalprocessing;
 
+import java.io.Serializable;
 
-public class StreamSegment {
+@SuppressWarnings("serial")
+public class StreamSegment implements Serializable {
 
-    private final double startTime;
+	private final double startTime;
     private final double sampleInterval;
     private final float[] data;
     private final StreamIdentifier id;
@@ -32,7 +34,8 @@ public class StreamSegment {
 
     public boolean isCompatibleWith(StreamSegment other) {
         // Should verify compatible (possibly not identical) sample intervals and end time of first is one sample less than start time of second.
-        return (this.id.equals(other.id) && this.isPreviousTo(other));
+        //return (this.id.equals(other.id) && this.isPreviousTo(other));
+        return this.id.equals(other.id);
     }
 
     public static StreamSegment combine(StreamSegment segment1, StreamSegment segment2) {
@@ -59,6 +62,7 @@ public class StreamSegment {
     }
 
     /**
+     * TODO: Test this method to see if what we are passing here is actually correct... I mean it works so far
      * Make sure that the two objects follow each other. Next sample should
      * start 1 sample interval after time of last sample in first segment.
      * Because of roundoff and sampling jitter an exact comparison is likely to

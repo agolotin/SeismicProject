@@ -1,10 +1,13 @@
 
 package main.java.edu.byu.seismicproject.signalprocessing;
 
+import java.io.Serializable;
+
 import main.java.edu.byu.seismicproject.general.band.SeismicBand;
 
 
-public class StreamIdentifier {
+@SuppressWarnings("serial")
+public class StreamIdentifier implements Serializable {
 
     private final String net;
     private final String sta;

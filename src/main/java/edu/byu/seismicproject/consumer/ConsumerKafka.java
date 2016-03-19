@@ -26,12 +26,12 @@ import org.apache.kafka.common.TopicPartition;
 public class ConsumerKafka implements Runnable, Serializable {
 	
 	private final KafkaConsumer consumer;
-	private final TopicPartition topicPartiton;
+	private final TopicPartition topicPartition;
     private final long tid;
         
     public ConsumerKafka(String group_id, String topic, int par) {
     	this.tid = Thread.currentThread().getId();
-    	this.topicPartiton = new TopicPartition(topic, par);
+    	this.topicPartition = new TopicPartition(topic, par);
 
         // Set up the consumer
         Properties props = new Properties();
@@ -67,12 +67,13 @@ public class ConsumerKafka implements Runnable, Serializable {
         	
         	
         	// Have consumer listen on a specific topic partition
-        	consumer.assign(Arrays.asList(topicPartiton));
+        	consumer.assign(Arrays.asList(topicPartition));
+        	System.out.printf("tid = %s, topic = %s, partition = %d\n", tid, topicPartition.topic(), topicPartition.partition());
         	
         	IgniteConfiguration conf = new IgniteConfiguration();
         	// Since multiple consumers will be running on a single node, 
         	//	we need to specify different names for them
-        	conf.setGridName(String.valueOf("Grid" + tid + "-" + topicPartiton.topic()));
+        	conf.setGridName(String.valueOf("Grid" + tid + "-" + topicPartition.topic()));
         	
         	/* REVIEWME: Review what communication spi does...
         	TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
@@ -145,7 +146,7 @@ public class ConsumerKafka implements Runnable, Serializable {
 					continue;
 				
 				StreamSegment previousSegment = (StreamSegment) previousRecord.value();
-				if (previousSegment.isCompatibleWith(currentSegment)) {
+				if (previousSegment.isPreviousTo(currentSegment)) {
 					// Analyze 2 segments together...
 					streamProcessor.analyzeSegments(currentSegment, previousSegment);
 				}
@@ -156,8 +157,8 @@ public class ConsumerKafka implements Runnable, Serializable {
 			//NOTE: The committed offset should always be the offset of the next message that the application will read. 
 			//	Thus, when calling commitSync(offsets) we should add one to the offset of the last message processed
 			long lastoffset = currentRecord.offset() + 1; 
-			consumer.commitSync(Collections.singletonMap(topicPartiton, new OffsetAndMetadata(lastoffset)));
-			System.out.printf("tid = %d, commit number = %d\n", tid, consumer.committed(topicPartiton));
+			consumer.commitSync(Collections.singletonMap(topicPartition, new OffsetAndMetadata(lastoffset)));
+			System.out.printf("tid = %d, commit number = %d\n", tid, consumer.committed(topicPartition).offset());
 		}
 	}
     

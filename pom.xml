@@ -4,7 +4,7 @@
 
     <groupId>edu.byu</groupId>
     <artifactId>SeismicProject</artifactId>
-    <version>0.0.7</version>
+    <version>0.0.8</version>
     <packaging>jar</packaging>
 
     <name>SeismicProject</name>
@@ -47,15 +47,17 @@
             </plugin>            
 
         </plugins>      
-    </build>
+	</build>
 
+	<!-- if some of the build fails, uncomment this out
     <repositories>
         <repository>
-            <id>local-maven-repo</id>
-            <url>file://${project.basedir}\libraries</url>
+            <id>project.local</id>
+            <name>project</name>
+            <url>file://${project.basedir}/libraries</url>
         </repository>
     </repositories>
-
+	-->
 
     <dependencies>
         <!-- A lot of dependencies are listed as "provided" which means you must 
@@ -74,24 +76,24 @@
             <groupId>edu.iris</groupId>
             <artifactId>IRIS-WS</artifactId>
             <version>2.0.15</version>
-        </dependency>
+		</dependency>
 
-        <dependency>
-            <groupId>com.oregondsp</groupId>
-            <artifactId>signalProcessing</artifactId>
-            <version>1</version>
-        </dependency>
+		<dependency>
+			<groupId>com.oregondsp</groupId>
+			<artifactId>signalProcessing</artifactId>
+			<version>1</version>
+		</dependency>
 
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>19.0</version>
-        </dependency>
-        <dependency>
-            <groupId>net.spy</groupId>
-            <artifactId>spymemcached</artifactId>
-            <version>2.12.0</version>
-        </dependency>
+		<dependency>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+			<version>19.0</version>
+		</dependency>
+		<dependency>
+			<groupId>net.spy</groupId>
+			<artifactId>spymemcached</artifactId>
+			<version>2.12.0</version>
+		</dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
@@ -121,7 +123,7 @@
             <groupId>com.esotericsoftware</groupId>
             <artifactId>kryo-shaded</artifactId>
             <version>3.0.3</version>
-        </dependency>
+		</dependency>
         
     </dependencies>
 </project>

@@ -47,25 +47,24 @@ public class ProducerKafka {
    	 * Entry point for KafkaProducer. 
    	 * Statically creates instance of the class and calls run function.
 	 * @param The input argument is a .properties file
-   	 * @throws IOException 
    	 */
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
     	if (args.length != 1) {
     		System.out.println("USAGE: java -cp target/SeismicProject-X.X.X.jar "
     				+ "main.java.producer.ProducerKafka input/producer.input.properties");
     		System.exit(1);
     	}
     	
-    	// Parse input arguments
-    	Properties inputProps = new Properties();
-    	FileInputStream in = new FileInputStream(args[0]);
-    	inputProps.load(in);
-    	in.close();
-    	
-    	// Create a new instance of producer
-        ProducerKafka prod = new ProducerKafka(inputProps);
-        
         try {
+			// Parse input arguments
+			Properties inputProps = new Properties();
+			FileInputStream in = new FileInputStream(args[0]);
+			inputProps.load(in);
+			in.close();
+			
+			// Create a new instance of producer
+			ProducerKafka prod = new ProducerKafka(inputProps);
+        
             prod.runKafkaProducer();
         } catch (TopicExistsException | IOException | InterruptedException e) {
             Logger.getLogger(ProducerKafka.class.getName()).log(Level.SEVERE, null, e);
@@ -262,8 +261,8 @@ public class ProducerKafka {
 		Date startDate = null;
 		Date endDate = null;
 		try {
-			startDate = dateformat.parse("2005-02-17T00:00:00");
-			endDate = dateformat.parse("2005-02-17T03:00:00");
+			startDate = dateformat.parse("2005-02-17T08:00:00");
+			endDate = dateformat.parse("2005-02-17T18:00:00");
 		} catch (ParseException e) {
 			e.printStackTrace();
 		}
