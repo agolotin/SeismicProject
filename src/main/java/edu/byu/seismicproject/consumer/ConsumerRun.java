@@ -7,6 +7,10 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import main.java.edu.byu.seismicproject.signalprocessing.processing.SeismicStreamProcessor;
 
 
 /*
@@ -19,7 +23,6 @@ public class ConsumerRun {
 	private final Integer[] allNumConsumers;
 	private final String[] allTopics;
 	private final String groupId;
-	private final String externalOffsetStorage;
 	
 	// Just in case we need to keep track of executors
 	private final List<ExecutorService> executors;
@@ -39,9 +42,6 @@ public class ConsumerRun {
 		}
 		
 		groupId = (String) inputProps.get("groupid");
-		
-		externalOffsetStorage = (String) inputProps.get("offsetStorageName");
-		
 		executors = new ArrayList<ExecutorService>();
 	}
 
@@ -50,7 +50,7 @@ public class ConsumerRun {
 	 * @param The input argument is a .properties file
 	 * @throws IOException
 	 */
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) {
 		// In the args input file we specify the number of consumers per topic, 
 		//	group id, and a list of topic for all sets of consumers
     	if (args.length != 1) {
@@ -59,14 +59,21 @@ public class ConsumerRun {
     		System.exit(1);
     	}
     	
-    	Properties inputProps = new Properties();
-    	FileInputStream in = new FileInputStream(args[0]);
-    	inputProps.load(in);
-    	in.close();
-    	
-		ConsumerRun runner = new ConsumerRun(inputProps);
-		
-		runner.runConsumers();
+    	try {
+			Properties inputProps = new Properties();
+			FileInputStream in = new FileInputStream(args[0]);
+			inputProps.load(in);
+			in.close();
+			
+			// Load the detectors from disk so we have them in cache for now...
+			SeismicStreamProcessor.BootstrapDetectors();
+			ConsumerRun runner = new ConsumerRun(inputProps);
+			
+			runner.runConsumers();
+    	}
+    	catch (Exception e) {
+            Logger.getLogger(ConsumerRun.class.getName()).log(Level.SEVERE, null, e);
+    	}
 	}
 	
 	/**
@@ -77,11 +84,11 @@ public class ConsumerRun {
 		for (String topic : allTopics) {
 			for (Integer singleNumConsumers : allNumConsumers) {
 				final ExecutorService executor = Executors.newFixedThreadPool(singleNumConsumers);
-				final List<ConsumerKafka> consumers = new ArrayList<>();
+				//final List<ConsumerKafka> consumers = new ArrayList<>();
 
 				for (int i = 0; i < singleNumConsumers; i++) {
-					ConsumerKafka consumer = new ConsumerKafka(i, groupId, topic, externalOffsetStorage);
-					consumers.add(consumer);
+					ConsumerKafka consumer = new ConsumerKafka(groupId, topic, i);
+					//consumers.add(consumer);
 					executor.submit(consumer);
 				}
 				executors.add(executor);

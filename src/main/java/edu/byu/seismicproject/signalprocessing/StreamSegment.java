@@ -30,13 +30,13 @@ public class StreamSegment {
         return data.clone();
     }
 
-    private boolean isCompatible(StreamSegment other) {
+    public boolean isCompatibleWith(StreamSegment other) {
         // Should verify compatible (possibly not identical) sample intervals and end time of first is one sample less than start time of second.
-        return this.id.equals(other.id);
+        return (this.id.equals(other.id) && this.isPreviousTo(other));
     }
 
     public static StreamSegment combine(StreamSegment segment1, StreamSegment segment2) {
-        if (!segment1.isCompatible(segment2)) {
+        if (!segment1.isCompatibleWith(segment2)) {
             throw new IllegalStateException("Segments are incompatible!");
         }
         float[] block1 = segment1.getData();

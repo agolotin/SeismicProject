@@ -27,7 +27,7 @@ public class SimpleFramework {
             // of length blockSizeSamps.
             int blockSizeSamps = 72000; // At a sample interval of .05 s this is one hour. 
             // The correlation detector needs to know the block size so it offsets properly in the blocks.
-            CorrelationDetector.setBlockSize(blockSizeSamps);
+            // CorrelationDetector.setBlockSize(blockSizeSamps);
             
             
             ToyStreamProducer stream = new ToyStreamProducer(blockSizeSamps);

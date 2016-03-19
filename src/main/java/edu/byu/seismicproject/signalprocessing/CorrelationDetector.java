@@ -7,13 +7,10 @@ public class CorrelationDetector {
     private final StreamIdentifier streamId;
     private final DetectorInfo detectorInfo;
 
-    public static int BLOCK_SIZE = 72000;
+    public final int BLOCK_SIZE;
 
-    static void setBlockSize(int blockSizeSamps) {
-        BLOCK_SIZE = blockSizeSamps;
-    }
 
-    public CorrelationDetector(DetectorInfo di, StreamIdentifier id, float[] templateData) {
+    public CorrelationDetector(DetectorInfo di, StreamIdentifier id, float[] templateData, int blockSize) {
         this.templateData = templateData.clone();
         double tmp = 0;
         for (float v : templateData) {
@@ -22,6 +19,7 @@ public class CorrelationDetector {
         templateAutoCorrelation = tmp;
         this.streamId = id;
         this.detectorInfo = di;
+        this.BLOCK_SIZE = blockSize;
     }
 
     public DetectionStatistic produceStatistic(StreamSegment segment) {

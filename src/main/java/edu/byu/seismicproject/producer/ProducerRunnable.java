@@ -2,8 +2,10 @@ package main.java.edu.byu.seismicproject.producer;
 
 import main.java.edu.byu.seismicproject.signalprocessing.IStreamProducer;
 import main.java.edu.byu.seismicproject.signalprocessing.StreamSegment;
-import java.util.concurrent.ExecutionException;
 
+import java.util.concurrent.ExecutionException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -29,12 +31,14 @@ class ProducerRunnable implements Runnable {
 	public void run() {
 		try {
 			while (streamer.hasNext()) {
+				// TODO: We need to block here before we send depending on the size of our cache and stuff...
 				ProducerRecord<String, StreamSegment> producerData = 
 						new ProducerRecord<>(topic, partitionNum, null, streamer.getNext());
-				this.producer.send(producerData).get(); // Right now let's block on a send...
+				this.producer.send(producerData).get(); 
 			}
 		} 
 		catch (InterruptedException | ExecutionException e) {
+            Logger.getLogger(ProducerKafka.class.getName()).log(Level.SEVERE, null, e);
 			Thread.currentThread().interrupt();
 		}
 	}

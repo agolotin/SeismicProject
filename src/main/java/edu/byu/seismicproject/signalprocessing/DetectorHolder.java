@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import main.java.edu.byu.seismicproject.general.band.SeismicBand;
 
@@ -20,8 +21,8 @@ public class DetectorHolder {
         float threshold = 0.6f;
         float blackout = 3;
         IDetectorSpecification spec = new CorrelationDetectorSpecification(threshold, blackout);
-        StreamIdentifier id = new StreamIdentifier("IU", "KBS", "BHZ", "00", new SeismicBand(1, 4, 2, 8));
-        detectors = new ArrayList<>();
+        StreamIdentifier id = new StreamIdentifier("IU", "KBS", "BHZ", "00", new SeismicBand(2, 4, 2, 8));
+        detectors = new LinkedBlockingQueue<>();
         // These data are already filtered into the stream pass band of 2 - 8 Hz.
         
         try (InputStream in = getClass().getResourceAsStream("/main/resources/detector/template1.txt")) {
@@ -46,9 +47,9 @@ public class DetectorHolder {
                     lines.add(line);
                     line = br.readLine();
                 }
-
             }
         }
+        
         float[] tmpArray = new float[lines.size()];
         for (int j = 0; j < lines.size(); ++j) {
             tmpArray[j] = Float.parseFloat(lines.get(j));
@@ -57,16 +58,21 @@ public class DetectorHolder {
         int offset = (int) Math.round(startSecond / dt);
         int npts = (int) Math.round(duration / dt);
 
+        int blockSizeSamps = 72000;
         float[] templateData = new float[npts];
         System.arraycopy(tmpArray, offset, templateData, 0, npts);
         double detectorDelayInSeconds = duration;
         int detectorid = ++detectoridSequence;
         DetectorInfo di = new DetectorInfo(detectorid, spec, detectorDelayInSeconds);
-        return new CorrelationDetector(di, id, templateData);
+        return new CorrelationDetector(di, id, templateData, blockSizeSamps);
     }
 
     public Collection<CorrelationDetector> getDetectors() {
         return new ArrayList<>(detectors);
+    }
+    
+    public void addNewDetector(CorrelationDetector newDetector) {
+    	this.detectors.add(newDetector);
     }
 
 }
