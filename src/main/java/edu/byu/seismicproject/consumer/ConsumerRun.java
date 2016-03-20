@@ -9,6 +9,9 @@ import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import kafka.admin.AdminUtils;
+import kafka.api.TopicMetadata;
+import main.java.edu.byu.seismicproject.producer.KafkaTopics;
 import main.java.edu.byu.seismicproject.signalprocessing.processing.SeismicStreamProcessor;
 
 
@@ -19,29 +22,18 @@ import main.java.edu.byu.seismicproject.signalprocessing.processing.SeismicStrea
  */
 public class ConsumerRun {
 	
-	private final Integer[] allNumConsumers;
 	private final String[] allTopics;
 	private final String groupId;
+	private final String zkHost;
 	
 	// Just in case we need to keep track of executors
 	private final List<ExecutorService> executors;
 	
 	public ConsumerRun(Properties inputProps) {
 		allTopics = inputProps.getProperty("topics").split(",");
-		String[] tempNumConsumers = ((String) inputProps.get("numconsumers")).split(",");
-		
-		if (tempNumConsumers.length != allTopics.length) {
-			String msg = "Number of topics does not match the size of the list of consumers";
-            Logger.getLogger(ConsumerRun.class.getName()).log(Level.SEVERE, msg);
-			System.exit(1);
-		}
-		
-		allNumConsumers = new Integer[tempNumConsumers.length];
-		for (int i = 0; i < tempNumConsumers.length; i++) {
-			allNumConsumers[i] = Integer.parseInt(tempNumConsumers[i]);
-		}
-		
 		groupId = inputProps.getProperty("groupid");
+		zkHost = inputProps.getProperty("zookeeper_host");
+		
 		executors = new ArrayList<ExecutorService>();
 	}
 
@@ -80,17 +72,26 @@ public class ConsumerRun {
 	 */
 	public void runConsumers()
 	{
+		KafkaTopics topicCreator = new KafkaTopics(zkHost);
+		
 		for (int topicNum = 0; topicNum < allTopics.length; topicNum++) {
-			final ExecutorService executor = Executors.newFixedThreadPool(allNumConsumers[topicNum]);
+			String topic = allTopics[topicNum];
+			// Get topic metadata to find out how many consumers we need
+			TopicMetadata topicMetadata = AdminUtils.fetchTopicMetadataFromZk(topic, topicCreator.getZkUtils());
+			int partitionsPerTopic = topicMetadata.partitionsMetadata().size();
+			
+			final ExecutorService executor = Executors.newFixedThreadPool(partitionsPerTopic);
 			//final List<ConsumerKafka> consumers = new ArrayList<>();
 
-			for (int consumerNum = 0; consumerNum < allNumConsumers[topicNum]; consumerNum++) {
-				ConsumerKafka consumer = new ConsumerKafka(groupId, allTopics[topicNum], consumerNum);
+			for (int consumerNum = 0; consumerNum < partitionsPerTopic; consumerNum++) {
+				ConsumerKafka consumer = new ConsumerKafka(groupId, topic, consumerNum);
 				//consumers.add(consumer);
 				executor.submit(consumer);
 			}
 			executors.add(executor);
 		}
+		
+		topicCreator.close();
 	}
 }
 

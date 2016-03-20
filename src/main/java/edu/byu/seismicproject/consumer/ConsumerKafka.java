@@ -67,8 +67,12 @@ public class ConsumerKafka implements Runnable, Serializable {
         	
         	
         	// Have consumer listen on a specific topic partition
+        	OffsetAndMetadata lastOffset = consumer.committed(topicPartition);
         	consumer.assign(Arrays.asList(topicPartition));
-        	System.out.printf("tid = %s, topic = %s, partition = %d\n", tid, topicPartition.topic(), topicPartition.partition());
+        	consumer.seek(topicPartition, lastOffset == null ? 0 : lastOffset.offset());
+        	
+        	System.out.printf("tid = %s, topic = %s, partition = %d, last committed offset = %d\n", 
+        			tid, topicPartition.topic(), topicPartition.partition(), lastOffset);
         	
         	IgniteConfiguration conf = new IgniteConfiguration();
         	// Since multiple consumers will be running on a single node, 
