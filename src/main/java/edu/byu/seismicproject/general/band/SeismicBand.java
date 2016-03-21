@@ -10,12 +10,18 @@ public class SeismicBand implements Serializable {
 	private final int order;
 	private final double lowCorner;
 	private final double highCorner;
+	private final int bandNum;
 	
 	public SeismicBand(int bandNum, int order, double lowCorner, double highCorner) {
+		this.bandNum = bandNum;
 		this.name = "band" + bandNum;
 		this.order = order;
 		this.lowCorner = lowCorner;
 		this.highCorner = highCorner;
+	}
+	
+	public int getBandNum() {
+		return bandNum;
 	}
 	
 	public String getName() {

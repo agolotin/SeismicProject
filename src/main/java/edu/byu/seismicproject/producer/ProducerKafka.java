@@ -80,14 +80,12 @@ public class ProducerKafka {
     public ProducerKafka(Properties inputProps) {
     	
     	stationList = inputProps.getProperty("stations").split(",");
-		//topic = inputProps.getProperty("topics");
     	bands = this.getBands(inputProps);
     	minutesPerBlock = Integer.parseInt(inputProps.getProperty("minutes_per_block"));
     	
     	// Set up zookeeper client to create new topics
     	String zkHost = inputProps.getProperty("zookeeper_host");
-    	String[] partitions_per_station = inputProps.getProperty("partitions_per_station").split(",");
-    	this.createTopics(zkHost, partitions_per_station);
+    	this.createTopics(zkHost);
         
         // Define producer properties
         Properties props = new Properties();
@@ -97,6 +95,7 @@ public class ProducerKafka {
         props.put("batch.size", 16384);
         props.put("linger.ms", 1);
         props.put("buffer.memory", 33554432);
+        props.put("partitioner.class", "main.java.edu.byu.seismicproject.producer.StreamPartitioner");
         props.put("key.serializer", "main.java.edu.byu.seismicproject.general.serialization.StreamSegmentEncoder");
         props.put("value.serializer", "main.java.edu.byu.seismicproject.general.serialization.StreamSegmentEncoder");
 
@@ -107,19 +106,16 @@ public class ProducerKafka {
      * This will make sure all of the topics that we need exist. If some of them don't it will
      * just create a new topic with a specified number of partitions
      * @param zkHost
-     * @param partitions_per_station
      */
-    private void createTopics(String zkHost, String[] partitions_per_station) { 
-    	if (partitions_per_station.length != stationList.length) {
-    		throw new IllegalStateException("list of stations and list of "
-    				+ "partitions paer station has to be of the same length");
-    	}
+    private void createTopics(String zkHost) { 
+    	// We are going to create as many partitions as there are bands
+    	int num_partitions = bands.length;
+    	int replication_factor = 1; // We can make it configurable later
     	KafkaTopics topicCreator = new KafkaTopics(zkHost);
     	
-    	int replication_factor = 1; // We can make it configurable later
     	for (int i = 0; i < stationList.length; i++) {
     		topicCreator.createNewTopic(stationList[i], 
-    				Integer.valueOf(partitions_per_station[i]), 
+    				num_partitions, 
     				replication_factor);
     	}
     	
@@ -192,50 +188,33 @@ public class ProducerKafka {
 		// The problem is that we can't put multiple segments into one. Every chunk has a time frame associated with it. 
 		// I will have to send data in chunks...maybe. Consumer is configured to handle this, so maybe I will just put it
 		// the way it is, which is multiple Segments. However, we will have to change the way we are putting it into cache. 
-		// Mainly, the window numbers will change
 		
-		// We are going to create a runnable per single band per partition per segment
+		// We are going to create a runnable per partition per segment
 		final ExecutorService producerRunnables = Executors.newFixedThreadPool(numPartitions * 
-				bands.length * timeseries.getSegments().size());
+				timeseries.getSegments().size());
 		
 		for (Segment segment : timeseries.getSegments()) {
 			// ================ GET PRELIMINARY INFO ===================== ||
-			long endTime, startTime = segment.getStartTime().getTime() / 1000; 
-			long secondsPerPartition = (long) ((segment.getSampleCount() / segment.getSamplerate()) / numPartitions);
+			long startTime = segment.getStartTime().getTime() / 1000, 
+					endTime = segment.getEndTime().getTime() / 1000;
 			
 			// TODO: What if there are multiple types of data in multiple lists...
 			float[] data = this.discoverMeasurementData(segment);
-			
-			// Get the number of samples this segment holds and figure out how many sends to send to a partition
-			// TODO: Check that the number of samples we are sending is divisible by the number of partitions
-			int samplesPerPartition = segment.getSampleCount() / numPartitions;
 			// =========================================================== ||
 			
-			for (int partitionNum = 0; partitionNum < numPartitions; partitionNum++) {
-				// Get the end time for the chunk
-				endTime = startTime + secondsPerPartition;
-				// Put a chunk of data into a separate array according to its partition
-				float[] rawDataPerPartition = new float[samplesPerPartition];
-				// Copy over a chunk of the main array to the array that we are sending
-				System.arraycopy(data, samplesPerPartition * partitionNum, 
-						rawDataPerPartition, 0, samplesPerPartition);
+			// Create a new Runnable for every band
+			for (SeismicBand _band : bands) {
+				// Create a new id for the block depending on the band size
+				StreamIdentifier id = new StreamIdentifier(timeseries.getNetworkCode(), timeseries.getStationCode(), 
+						timeseries.getChannelCode(), timeseries.getLocation(), _band);
 				
-				// Create a new Runnable for every band
-				for (SeismicBand _band : bands) {
-					// Create a new id for the block depending on the band size
-					StreamIdentifier id = new StreamIdentifier(timeseries.getNetworkCode(), timeseries.getStationCode(), 
-							timeseries.getChannelCode(), timeseries.getLocation(), _band);
-					
-					// Populate the streamer so we can discard the raw data block
-					IStreamProducer streamer = new AnotherStreamProducer(id, rawDataPerPartition, startTime, endTime, 
-							minutesPerBlock, segment.getSamplerate());
-					// Create a runnable task with a station as a topic
-					ProducerRunnable task = new ProducerRunnable(streamer, producer, topic, partitionNum);
-					// Submit the task
-					producerRunnables.submit(task);
-				}
-				// Switch the end and start time together for the next message
-				startTime = endTime;
+				// Populate the streamer so we can discard the raw data block
+				IStreamProducer streamer = new AnotherStreamProducer(id, data, startTime, endTime, 
+						minutesPerBlock, segment.getSamplerate());
+				// Create a runnable task with a station as a topic
+				ProducerRunnable task = new ProducerRunnable(streamer, producer, topic);
+				// Submit the task
+				producerRunnables.submit(task);
 			}
 		}
 		producers.add(producerRunnables);

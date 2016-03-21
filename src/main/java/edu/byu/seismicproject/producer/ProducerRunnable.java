@@ -16,14 +16,12 @@ class ProducerRunnable implements Runnable {
 	
 	private final KafkaProducer producer;
 	private final String topic;
-	private final int partitionNum;
 	
 	
-	public ProducerRunnable(IStreamProducer streamer, KafkaProducer producer, String topic, int partitionNum) {
+	public ProducerRunnable(IStreamProducer streamer, KafkaProducer producer, String topic) {
 		this.streamer = streamer;
 		this.producer = producer;
 		this.topic = topic;
-		this.partitionNum = partitionNum;
 	}
 
 	@Override
@@ -32,7 +30,7 @@ class ProducerRunnable implements Runnable {
 			while (streamer.hasNext()) {
 				// TODO: We need to block here before we send depending on the size of our cache and stuff...
 				ProducerRecord<String, StreamSegment> producerData = 
-						new ProducerRecord<>(topic, partitionNum, null, streamer.getNext());
+						new ProducerRecord<>(topic, streamer.getNext());
 				this.producer.send(producerData); 
 			}
 		} 
