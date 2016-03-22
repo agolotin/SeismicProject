@@ -53,6 +53,9 @@ public class IgniteCacheConfig
 		config.setOffHeapMaxMemory(0); 
 		// Enable swap space storage
 		// config.setSwapEnabled(true);  // TODO: Configure swap spi on server... or client, not sure which one
+		// When a new ignite instance comes in we want to rebalance our cache data. Since this cache will be really 
+		// large we want to limit the number of messages we send. So for now a message will contain 10MB per message
+		config.setRebalanceBatchSize(10 * 1024 * 1024); 
 	
 		return config;
 	}
