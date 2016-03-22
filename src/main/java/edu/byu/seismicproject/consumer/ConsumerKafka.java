@@ -4,7 +4,6 @@ import main.java.edu.byu.seismicproject.ignite.server.IgniteCacheConfig;
 import main.java.edu.byu.seismicproject.signalprocessing.StreamSegment;
 import main.java.edu.byu.seismicproject.signalprocessing.processing.SeismicStreamProcessor;
 
-import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Properties;
@@ -13,8 +12,7 @@ import java.util.logging.Logger;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.Ignition;
-import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -22,14 +20,19 @@ import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 
 
-@SuppressWarnings({"unchecked", "rawtypes", "serial"})
-public class ConsumerKafka implements Runnable, Serializable {
+@SuppressWarnings({"unchecked", "rawtypes"})
+public class ConsumerKafka implements IgniteRunnable {
+	
+	private static final long serialVersionUID = -262948227053358289L;
+
+	private final Ignite igniteInstance;
 	
 	private final KafkaConsumer consumer;
 	private final TopicPartition topicPartition;
     private final long tid;
         
-    public ConsumerKafka(String group_id, String topic, int par) {
+    public ConsumerKafka(Ignite ignite, String group_id, String topic, int par) {
+    	this.igniteInstance = ignite;
     	this.tid = Thread.currentThread().getId();
     	this.topicPartition = new TopicPartition(topic, par);
 
@@ -74,28 +77,12 @@ public class ConsumerKafka implements Runnable, Serializable {
         	System.out.printf("tid = %s, topic = %s, partition = %d, last committed offset = %d\n", 
         			tid, topicPartition.topic(), topicPartition.partition(), lastOffset);
         	
-        	IgniteConfiguration conf = new IgniteConfiguration();
-        	// Since multiple consumers will be running on a single node, 
-        	//	we need to specify different names for them
-        	conf.setGridName(String.valueOf("Grid" + tid + "-" + topicPartition.topic()));
-        	
-        	/* REVIEWME: Review what communication spi does...
-        	TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
-        	commSpi.setLocalAddress("localhost");
-        	commSpi.setLocalPortRange(100);
-        	
-        	conf.setCommunicationSpi(commSpi);
-        	*/
-        	conf.setClientMode(true);
-        	
-        	Ignite ignite = Ignition.start(conf);
-        	
         	//recordCache stores the records during processing to allow a previous window to 
         	// be retrieved and processed with the current one
 			IgniteCache<String, ConsumerRecord> recordCache = 
-					ignite.getOrCreateCache(IgniteCacheConfig.recordHolderCache());
+					igniteInstance.getOrCreateCache(IgniteCacheConfig.recordHolderCache());
 			
-			SeismicStreamProcessor streamProcessor = new SeismicStreamProcessor(ignite);
+			SeismicStreamProcessor streamProcessor = new SeismicStreamProcessor(igniteInstance);
 			
 			while (true) {
 				ConsumerRecords<String, StreamSegment> records = consumer.poll(Long.MAX_VALUE);

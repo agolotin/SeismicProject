@@ -1,13 +1,14 @@
 package main.java.edu.byu.seismicproject.consumer;
 
 import java.io.FileInputStream;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import org.apache.ignite.Ignite;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.configuration.IgniteConfiguration;
 
 import kafka.admin.AdminUtils;
 import kafka.api.TopicMetadata;
@@ -26,15 +27,10 @@ public class ConsumerRun {
 	private final String groupId;
 	private final String zkHost;
 	
-	// Just in case we need to keep track of executors
-	private final List<ExecutorService> executors;
-	
 	public ConsumerRun(Properties inputProps) {
 		allTopics = inputProps.getProperty("topics").split(",");
 		groupId = inputProps.getProperty("groupid");
 		zkHost = inputProps.getProperty("zookeeper_host");
-		
-		executors = new ArrayList<ExecutorService>();
 	}
 
 	/**
@@ -60,7 +56,8 @@ public class ConsumerRun {
 			SeismicStreamProcessor.BootstrapDetectors();
 			ConsumerRun runner = new ConsumerRun(inputProps);
 			
-			runner.runConsumers();
+			final ExecutorService exec = Ignition.start().executorService();
+			runner.runConsumers(exec);
     	}
     	catch (Exception e) {
             Logger.getLogger(ConsumerRun.class.getName()).log(Level.SEVERE, null, e);
@@ -70,7 +67,7 @@ public class ConsumerRun {
 	/**
 	 * Runs the consumers desired by the user. Called directly by main().
 	 */
-	public void runConsumers()
+	public void runConsumers(ExecutorService exec)
 	{
 		KafkaTopics topicCreator = new KafkaTopics(zkHost);
 		
@@ -80,15 +77,27 @@ public class ConsumerRun {
 			TopicMetadata topicMetadata = AdminUtils.fetchTopicMetadataFromZk(topic, topicCreator.getZkUtils());
 			int partitionsPerTopic = topicMetadata.partitionsMetadata().size();
 			
-			final ExecutorService executor = Executors.newFixedThreadPool(partitionsPerTopic);
-			//final List<ConsumerKafka> consumers = new ArrayList<>();
-
 			for (int consumerNum = 0; consumerNum < partitionsPerTopic; consumerNum++) {
-				ConsumerKafka consumer = new ConsumerKafka(groupId, topic, consumerNum);
+				IgniteConfiguration conf = new IgniteConfiguration();
+				// Since multiple consumers will be running on a single node, 
+				//	we need to specify different names for them
+				conf.setGridName(String.valueOf("Grid" + "-" + topic + "-" + consumerNum));
+				
+				/* NOTE: TcpCommunicationSpi has to be set up on a distributed cluster
+				TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
+				commSpi.setLocalAddress("localhost");
+				commSpi.setLocalPortRange(100);
+				
+				conf.setCommunicationSpi(commSpi);
+				*/
+				conf.setClientMode(true);
+				
+				Ignite ignite = Ignition.start(conf);
+        	
+				ConsumerKafka consumer = new ConsumerKafka(ignite, groupId, topic, consumerNum);
 				//consumers.add(consumer);
-				executor.submit(consumer);
+				exec.submit(consumer);
 			}
-			executors.add(executor);
 		}
 		
 		topicCreator.close();
