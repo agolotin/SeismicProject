@@ -1,14 +1,18 @@
 package main.java.edu.byu.seismicproject.consumer;
 
 import java.io.FileInputStream;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 
 import kafka.admin.AdminUtils;
 import kafka.api.TopicMetadata;
@@ -23,16 +27,6 @@ import main.java.edu.byu.seismicproject.signalprocessing.processing.SeismicStrea
  */
 public class ConsumerRun {
 	
-	private final String[] allTopics;
-	private final String groupId;
-	private final String zkHost;
-	
-	public ConsumerRun(Properties inputProps) {
-		allTopics = inputProps.getProperty("topics").split(",");
-		groupId = inputProps.getProperty("groupid");
-		zkHost = inputProps.getProperty("zookeeper_host");
-	}
-
 	/**
 	 * Entry point for ConsumerRun, calls runConsumers function.
 	 * @param The input argument is a .properties file
@@ -56,18 +50,45 @@ public class ConsumerRun {
 			SeismicStreamProcessor.BootstrapDetectors();
 			ConsumerRun runner = new ConsumerRun(inputProps);
 			
-			final ExecutorService exec = Ignition.start().executorService();
-			runner.runConsumers(exec);
+			// Set up Ignite client here
+			IgniteConfiguration conf = new IgniteConfiguration();
+			// NOTE: TcpCommunicationSpi has to be set up on a distributed cluster
+			TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
+			commSpi.setLocalAddress("localhost");
+			commSpi.setLocalPortRange(100);
+			
+			conf.setCommunicationSpi(commSpi);
+			
+			conf.setGridName("Grid" + "-" + runner.allTopics[0]);
+			conf.setClientMode(true);
+			Ignite ignite = Ignition.start(conf);
+			
+			// Create distributed thread pool for tasks to be executed on different ignite nodes
+			runner.runConsumers(ignite);
     	}
     	catch (Exception e) {
             Logger.getLogger(ConsumerRun.class.getName()).log(Level.SEVERE, null, e);
     	}
 	}
 	
+	
+	private final String[] allTopics;
+	private final String groupId;
+	private final String zkHost;
+	private List<ExecutorService> executors;
+	
+	public ConsumerRun(Properties inputProps) {
+		allTopics = inputProps.getProperty("topics").split(",");
+		groupId = inputProps.getProperty("groupid");
+		zkHost = inputProps.getProperty("zookeeper_host");
+		
+		executors = new LinkedList<ExecutorService>();
+	}
+
 	/**
 	 * Runs the consumers desired by the user. Called directly by main().
 	 */
-	public void runConsumers(ExecutorService exec)
+	public void runConsumers(Ignite ignite) 
 	{
 		KafkaTopics topicCreator = new KafkaTopics(zkHost);
 		
@@ -77,27 +98,12 @@ public class ConsumerRun {
 			TopicMetadata topicMetadata = AdminUtils.fetchTopicMetadataFromZk(topic, topicCreator.getZkUtils());
 			int partitionsPerTopic = topicMetadata.partitionsMetadata().size();
 			
+			final ExecutorService exec = Executors.newFixedThreadPool(partitionsPerTopic);
 			for (int consumerNum = 0; consumerNum < partitionsPerTopic; consumerNum++) {
-				IgniteConfiguration conf = new IgniteConfiguration();
-				// Since multiple consumers will be running on a single node, 
-				//	we need to specify different names for them
-				conf.setGridName(String.valueOf("Grid" + "-" + topic + "-" + consumerNum));
-				
-				/* NOTE: TcpCommunicationSpi has to be set up on a distributed cluster
-				TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
-				commSpi.setLocalAddress("localhost");
-				commSpi.setLocalPortRange(100);
-				
-				conf.setCommunicationSpi(commSpi);
-				*/
-				conf.setClientMode(true);
-				
-				Ignite ignite = Ignition.start(conf);
-        	
 				ConsumerKafka consumer = new ConsumerKafka(ignite, groupId, topic, consumerNum);
-				//consumers.add(consumer);
-				exec.submit(consumer);
+				exec.execute(consumer);
 			}
+			executors.add(exec);
 		}
 		
 		topicCreator.close();

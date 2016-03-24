@@ -1,5 +1,6 @@
 package main.java.edu.byu.seismicproject.signalprocessing.processing;
 
+import java.io.Serializable;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.GregorianCalendar;
@@ -20,7 +21,8 @@ import main.java.edu.byu.seismicproject.signalprocessing.StreamSegment;
 import main.java.edu.byu.seismicproject.signalprocessing.TriggerData;
 
 
-public class SeismicStreamProcessor {
+@SuppressWarnings("serial")
+public class SeismicStreamProcessor implements Serializable {
 
     private final DetectionStatisticScanner statisticScanner;
     private final IgniteCache<String, DetectorHolder> detectorCache;

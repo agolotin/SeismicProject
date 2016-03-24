@@ -1,5 +1,6 @@
 package main.java.edu.byu.seismicproject.signalprocessing;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
@@ -7,7 +8,8 @@ import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class DetectionStatisticScanner {
+@SuppressWarnings("serial")
+public class DetectionStatisticScanner implements Serializable {
 
     Map<Integer, Queue<DetectionStatistic>> detectorStatisticMap;
     Map<Integer, Integer> detectorOverRunMap;

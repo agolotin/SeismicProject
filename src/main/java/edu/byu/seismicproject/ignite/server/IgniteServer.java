@@ -35,7 +35,6 @@ public class IgniteServer
         //	commSpi.setLocalPortRange(100);
         //	
         //	conf.setCommunicationSpi(commSpi);
-        //	conf.setClientMode(false);
 			Ignition.start();
 		}
 		catch (IgniteException e) {

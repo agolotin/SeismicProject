@@ -4,6 +4,7 @@ import main.java.edu.byu.seismicproject.ignite.server.IgniteCacheConfig;
 import main.java.edu.byu.seismicproject.signalprocessing.StreamSegment;
 import main.java.edu.byu.seismicproject.signalprocessing.processing.SeismicStreamProcessor;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Properties;
@@ -13,6 +14,7 @@ import java.util.logging.Logger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -20,11 +22,10 @@ import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 
 
-@SuppressWarnings({"unchecked", "rawtypes"})
-public class ConsumerKafka implements IgniteRunnable {
+@SuppressWarnings({"unchecked", "rawtypes", "serial"})
+public class ConsumerKafka implements Runnable, Serializable {
 	
-	private static final long serialVersionUID = -262948227053358289L;
-
+	@IgniteInstanceResource
 	private final Ignite igniteInstance;
 	
 	private final KafkaConsumer consumer;
@@ -33,7 +34,7 @@ public class ConsumerKafka implements IgniteRunnable {
         
     public ConsumerKafka(Ignite ignite, String group_id, String topic, int par) {
     	this.igniteInstance = ignite;
-    	this.tid = Thread.currentThread().getId();
+    	this.tid = par;//Thread.currentThread().getId();
     	this.topicPartition = new TopicPartition(topic, par);
 
         // Set up the consumer
@@ -67,7 +68,6 @@ public class ConsumerKafka implements IgniteRunnable {
         	//		As of now, we are just going to have a consumer listen on a specific partition
         	//consumer.subscribe(Arrays.asList(topic));
         	//		new EventConsumerRebalanceListener(consumer, offsetManager.getStorageName()));
-        	
         	
         	// Have consumer listen on a specific topic partition
         	OffsetAndMetadata lastOffset = consumer.committed(topicPartition);
