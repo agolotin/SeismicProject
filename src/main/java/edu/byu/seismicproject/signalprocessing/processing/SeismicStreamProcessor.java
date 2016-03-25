@@ -87,8 +87,18 @@ public class SeismicStreamProcessor implements Serializable {
         int msec = d.get(Calendar.MILLISECOND);
         return String.format("%04d-%03d %02d:%02d:%02d.%03d", year, doy, hour, min, sec, msec);
     }
-
+    
+	/**
+     * Create groups of coincident triggers, find the highest stat value in each group,
+     * prune all lower values, promote highest trigger from each group to a detection.
+     * Output detections to a file
+     * 
+     * 
+     * @param triggers
+     */
     private void processAllTriggers(Collection<TriggerData> triggers) {
+    	//TODO: need to scan triggers and identify coincident triggers (within 10 sec) 
+
         triggers.stream().forEach((td) -> {
             System.out.println(td);
         });
