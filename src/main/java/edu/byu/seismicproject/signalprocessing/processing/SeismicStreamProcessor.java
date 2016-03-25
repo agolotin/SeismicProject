@@ -61,6 +61,7 @@ public class SeismicStreamProcessor implements Serializable {
 				}
 			}
 			
+			//TODO: scanForTriggers should be modified to return a map with detector ID -> collection
 			Collection<TriggerData> triggers = statisticScanner.scanForTriggers();
 			if (!triggers.isEmpty()) {
 				processAllTriggers(triggers);
