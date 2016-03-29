@@ -22,8 +22,8 @@ public class DetectorHolder {
         float blackout = 3;
         IDetectorSpecification spec = new CorrelationDetectorSpecification(threshold, blackout);
         //TODO: Use the correct StreamIdentifier for the application
-        StreamIdentifier id = new StreamIdentifier("IU", "KBS", "BHZ", "00", new SeismicBand(2, 4, 2, 8)); // this line is for our framework
-        //StreamIdentifier id = new StreamIdentifier("IU", "KBS", "BHZ", "00", new SeismicBand(1, 4, 2, 8)); // this line is for SimpleFramework
+//        StreamIdentifier id = new StreamIdentifier("IU", "KBS", "BHZ", "00", new SeismicBand(2, 4, 2, 8)); // this line is for our framework
+        StreamIdentifier id = new StreamIdentifier("IU", "KBS", "BHZ", "00", new SeismicBand(1, 4, 2, 8)); // this line is for SimpleFramework
         detectors = new LinkedBlockingQueue<>();
         // These data are already filtered into the stream pass band of 2 - 8 Hz.
         

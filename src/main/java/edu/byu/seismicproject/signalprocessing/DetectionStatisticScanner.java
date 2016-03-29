@@ -3,6 +3,7 @@ package main.java.edu.byu.seismicproject.signalprocessing;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -38,8 +39,8 @@ public class DetectionStatisticScanner implements Serializable {
         statisticPair.add(statistic);
     }
 
-    public Collection<TriggerData> scanForTriggers() {
-        Collection<TriggerData> result = new ArrayList<>();
+    public HashMap<Integer, Collection<TriggerData>> scanForTriggers() {
+    	HashMap<Integer, Collection<TriggerData>> triggerMap = new HashMap<Integer, Collection<TriggerData>>();
         detectorStatisticMap.keySet().stream().forEach((detectorid) -> {
             int lastBlockOverrun = detectorOverRunMap.get(detectorid);
             Queue<DetectionStatistic> statisticPair = detectorStatisticMap.get(detectorid);
@@ -80,7 +81,12 @@ public class DetectionStatisticScanner implements Serializable {
                             int correctedIndex = triggerPositionType == TriggerPositionType.STATISTIC_MAX ? maxIndex : initialTriggerIndex;
                             double triggerTime = getCorrectedTriggerTime(combined, correctedIndex);
                             TriggerData trigger = new TriggerData(detectorInfo, correctedIndex, triggerTime, maxDetStat);
-                            result.add(trigger);
+                            if (! triggerMap.containsKey(detectorInfo.getDetectorid())) {
+                            	Collection<TriggerData> triggerCollection = new ArrayList<>();
+                            	triggerMap.put(detectorInfo.getDetectorid(), triggerCollection);
+                            }
+                            
+                            triggerMap.get(detectorInfo.getDetectorid()).add(trigger);
                         } else {
                             ++index;
                         }
@@ -88,7 +94,7 @@ public class DetectionStatisticScanner implements Serializable {
                 }
             }
         });
-        return result;
+        return triggerMap;
     }
 
     private double getCorrectedTriggerTime(DetectionStatistic combined, int index) {

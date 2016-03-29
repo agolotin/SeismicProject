@@ -1,9 +1,11 @@
 package main.java.edu.byu.seismicproject.signalprocessing.processing;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.GregorianCalendar;
+import java.util.HashMap;
 import java.util.TimeZone;
 
 import org.apache.ignite.Ignite;
@@ -61,10 +63,11 @@ public class SeismicStreamProcessor implements Serializable {
 				}
 			}
 			
-			//TODO: scanForTriggers should be modified to return a map with detector ID -> collection
-			Collection<TriggerData> triggers = statisticScanner.scanForTriggers();
-			if (!triggers.isEmpty()) {
-				processAllTriggers(triggers);
+			HashMap<Integer, Collection<TriggerData>> triggers = statisticScanner.scanForTriggers();
+			if (!triggers.isEmpty()) {				
+				for (Integer detectorID : triggers.keySet()) {
+					processAllTriggers(detectorID, triggers.get(detectorID));
+				}
 			}
         }
         // create new detectors otherwise... I guess...
@@ -93,16 +96,65 @@ public class SeismicStreamProcessor implements Serializable {
      * Create groups of coincident triggers, find the highest stat value in each group,
      * prune all lower values, promote highest trigger from each group to a detection.
      * Output detections to a file
-     * 
+	 * @param detectorID 
      * 
      * @param triggers
      */
-    private void processAllTriggers(Collection<TriggerData> triggers) {
-    	//TODO: need to scan triggers and identify coincident triggers (within 10 sec) 
-
-        triggers.stream().forEach((td) -> {
-            System.out.println(td);
-        });
+    private void processAllTriggers(Integer detectorID, Collection<TriggerData> triggers) {
+    	//TODO: need to scan triggers and identify coincident triggers (within 10 sec)
+    	//1. group triggers into coincident groups
+    		//loop through list of triggers
+    		//for each trigger, if the next trigger is within 10 seconds, add it to the collection
+    		//
+    	//2. scan groups to identify highest stat value
+    	//3. use that to generate new detection
+    	//4. compare to detector of given ID
+    	
+    	//This list will hold lists, each representing a group of triggers
+    	ArrayList<ArrayList<TriggerData>> triggerGroups = new ArrayList<ArrayList<TriggerData>>();
+    	triggerGroups.add(new ArrayList<TriggerData>());
+    	
+    	TriggerData prevTrigger = null;
+    	for (TriggerData currTrigger : triggers) {
+    		if (prevTrigger == null) {
+    			prevTrigger = currTrigger;
+    		}
+    		else if ((currTrigger.getTriggerTime() - 10) <= prevTrigger.getTriggerTime()) {    			
+        		//If the current trigger time minus 10 seconds is greater than 
+        		//the previous trigger time, a new group should be added 
+    			triggerGroups.add(new ArrayList<TriggerData>());
+    		}
+    		triggerGroups.get(triggerGroups.size()-1).add(currTrigger);
+    	}
+    	//This will store the highest trigger by stat value and the start and end times of the group it came from
+    	HashMap<TriggerData, ArrayList<Double>> groupSummaries = new HashMap<TriggerData, ArrayList<Double>>(); 
+    	
+    	for (ArrayList<TriggerData> group : triggerGroups) {
+    		float maxStat = -1;
+    		TriggerData maxTrigger = null;
+    		for (TriggerData trigger : group) {
+    			if (trigger.getStatistic() > maxStat) {
+    				maxTrigger = trigger;
+    				maxStat = trigger.getStatistic();
+    			}
+    		}
+    		ArrayList<Double> timeRange = new ArrayList<Double>();
+    		timeRange.add(group.get(0).getTriggerTime());
+    		timeRange.add(group.get(group.size() -1).getTriggerTime());
+    		groupSummaries.put(maxTrigger, timeRange);
+    	}
+        
+        for (TriggerData trigger : groupSummaries.keySet()) {
+        	System.out.println(trigger);
+        	System.out.println("Group start: " + groupSummaries.get(trigger).get(0) + 
+        			" Group end: " + groupSummaries.get(trigger).get(1));
+        }
+    }
+    
+    private Collection<TriggerData> orderTriggers(Collection<TriggerData> triggers) {
+    	
+    	
+    	return null;
     }
 
 }
