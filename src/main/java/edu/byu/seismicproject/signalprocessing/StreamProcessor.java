@@ -9,6 +9,7 @@ import java.io.FileNotFoundException;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.GregorianCalendar;
+import java.util.HashMap;
 import java.util.TimeZone;
 
 /**
@@ -46,9 +47,11 @@ public class StreamProcessor {
                     statisticScanner.addStatistic(statistic);
                 }
             }
-            Collection<TriggerData> triggers = statisticScanner.scanForTriggers();
+            HashMap<Integer, Collection<TriggerData>> triggers = statisticScanner.scanForTriggers();
             if (!triggers.isEmpty()) {
-                processAllTriggers(triggers);
+            	for (Integer detectorID : triggers.keySet()) {
+            		processAllTriggers(triggers.get(detectorID));
+            	}                
             }
         } else {
             streamStart = segment.getStartTime();
