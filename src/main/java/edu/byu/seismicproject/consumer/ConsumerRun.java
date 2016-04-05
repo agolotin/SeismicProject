@@ -17,7 +17,6 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import kafka.admin.AdminUtils;
 import kafka.api.TopicMetadata;
 import main.java.edu.byu.seismicproject.producer.KafkaTopics;
-import main.java.edu.byu.seismicproject.signalprocessing.processing.SeismicStreamProcessor;
 
 
 /**
@@ -47,7 +46,7 @@ public class ConsumerRun {
 			in.close();
 			
 			// Load the detectors from disk so we have them in cache for now...
-			SeismicStreamProcessor.BootstrapDetectors();
+			//SeismicStreamProcessor.BootstrapDetectors();
 			ConsumerRun runner = new ConsumerRun(inputProps);
 			
 			// Set up Ignite client here
@@ -62,7 +61,6 @@ public class ConsumerRun {
 			conf.setGridName("Grid" + "-" + runner.allTopics[0]);
 			conf.setClientMode(true);
 			Ignite ignite = Ignition.start(conf);
-			
 			// Create distributed thread pool for tasks to be executed on different ignite nodes
 			runner.runConsumers(ignite);
     	}

@@ -75,7 +75,7 @@ public class ConsumerKafka implements Runnable, Serializable {
         	consumer.seek(topicPartition, lastOffset == null ? 0 : lastOffset.offset());
         	
         	System.out.printf("tid = %s, topic = %s, partition = %d, last committed offset = %d\n", 
-        			tid, topicPartition.topic(), topicPartition.partition(), lastOffset);
+        			tid, topicPartition.topic(), topicPartition.partition(), lastOffset == null ? 0 : lastOffset.offset());
         	
         	//recordCache stores the records during processing to allow a previous window to 
         	// be retrieved and processed with the current one
@@ -141,6 +141,13 @@ public class ConsumerKafka implements Runnable, Serializable {
 					// Analyze 2 segments together...
 					streamProcessor.analyzeSegments(currentSegment, previousSegment);
 				}
+				else {
+					// Implement busy waiting where as long as our current segment's time is less 
+					// than a segment that we got from cache then we wait...
+					// Once the previous record is directly previous to current segment, we analyze it
+					// Once the segment in cache is larger in time than our current segment we need to get
+					// that record as our current record and put the current record as now previous record
+				}
 			}
 			// Put current record to cache so we can retrieve it as a previous record later
 			this.cacheRecord(currentRecord, currentSegment, recordCache);	
@@ -171,7 +178,7 @@ public class ConsumerKafka implements Runnable, Serializable {
     	String key = Integer.toString(newSegment.getId().hashCode()) + "-" +
     				currentRecord.topic() + "-" + currentRecord.partition();
 		
-    	ConsumerRecord previousRecord = recordCache.get(key);   	
+    	ConsumerRecord previousRecord = recordCache.getAndRemove(key);   	
     	
     	return previousRecord;
     }
@@ -193,7 +200,10 @@ public class ConsumerKafka implements Runnable, Serializable {
     				currentRecord.topic() + "-" + currentRecord.partition();
     	//#streamIdentifier-topic-partitionNum
     	
-    	recordCache.put(key, currentRecord);
+    	boolean put = recordCache.putIfAbsent(key, currentRecord);
+    	while (!put) {
+    		put = recordCache.putIfAbsent(key, currentRecord);
+    	}
     }
 
 	public void shutdown() {

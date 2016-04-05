@@ -54,7 +54,8 @@ public class ProducerKafka {
     				+ "main.java.producer.ProducerKafka input/producer.input.properties");
     		System.exit(1);
     	}
-    
+    	
+    	ProducerKafka prod = null;
         try {
 			// Parse input arguments
 			Properties inputProps = new Properties();
@@ -63,11 +64,14 @@ public class ProducerKafka {
 			in.close();
 			
 			// Create a new instance of producer
-			ProducerKafka prod = new ProducerKafka(inputProps);
+			prod = new ProducerKafka(inputProps);
         
             prod.runKafkaProducer();
-        } catch (TopicExistsException | IOException | InterruptedException e) {
+        } catch (Exception e) {
             Logger.getLogger(ProducerKafka.class.getName()).log(Level.SEVERE, null, e);
+        }
+        finally {
+        	prod.producer.close();
         }
     }
 
@@ -148,28 +152,53 @@ public class ProducerKafka {
      * Configures the log, gets a message from the IRIS service, then loops through the resulting 
      * timeSeriesCollection and redirects the data to the sendSegmentsToPartitions function   
      * @throws InterruptedException 
+     * @throws ParseException 
      */
-	public void runKafkaProducer() throws IOException, InterruptedException {
+	public void runKafkaProducer() throws IOException, InterruptedException, ParseException {
         // log4j writes to stdout for now
         org.apache.log4j.BasicConfigurator.configure();
+        // Pull 10 hour blocks at a time
+        Long start = new Long("1108627200000"), increment = new Long("36000000");
         
-        List<Timeseries> timeSeriesCollection = this.getIrisMessage();
-        
-        List<ExecutorService> producers = new ArrayList<ExecutorService>();
-        
-        for (int k = 0; k < timeSeriesCollection.size(); k++) {
-        	Timeseries timeseries = timeSeriesCollection.get(k);
-        	String topic = stationList[k];
-        	// Split the message into several chunks so the whole chunk of data will go to different partitions
-        	this.sendSegmentsToPartitions(timeseries, topic, producers, this.producer.partitionsFor(topic).size());
-        }
+        for (;;) {
+			Long end = start + increment;
+			System.out.println("Sending data from " + ProducerKafka.getTimeString(start) + 
+					" to " + ProducerKafka.getTimeString(end));
+			
+			List<Timeseries> timeSeriesCollection = this.getIrisMessage(start, end);
+			List<ExecutorService> producers = new ArrayList<ExecutorService>();
+			for (int k = 0; k < timeSeriesCollection.size(); k++) {
+				Timeseries timeseries = timeSeriesCollection.get(k);
+				// Let's not worry about objects that have more than 1 segment for now...
+				if (timeseries.getSegments().size() > 1) {
+					continue;
+				}
+			
+				String topic = stationList[k];
+				// Split the message into several chunks so the whole chunk of data will go to different partitions
+				this.sendSegmentsToPartitions(timeseries, topic, producers, this.producer.partitionsFor(topic).size());
+			}
 
-        // We are waiting for all of the runnables to finish sending messages and then we can close the producer
-        for (ExecutorService producerRunnables : producers) {
-        	producerRunnables.shutdown();
-        	producerRunnables.awaitTermination(365, TimeUnit.DAYS);
+			// We are waiting for all of the runnables to finish sending messages and then we can close the producer
+			for (ExecutorService producerRunnables : producers) {
+				producerRunnables.shutdown();
+				producerRunnables.awaitTermination(365, TimeUnit.DAYS);
+			}
+			
+			start = end;
         }
-        this.producer.close();
+    }
+    private static String getTimeString(long time) {
+        GregorianCalendar d = new GregorianCalendar(TimeZone.getTimeZone("GMT"));
+        d.clear();
+        d.setTimeInMillis(time);
+        int year = d.get(Calendar.YEAR);
+        int doy = d.get(Calendar.DAY_OF_YEAR);
+        int hour = d.get(Calendar.HOUR_OF_DAY);
+        int min = d.get(Calendar.MINUTE);
+        int sec = d.get(Calendar.SECOND);
+        int msec = d.get(Calendar.MILLISECOND);
+        return String.format("%04d-%03d %02d:%02d:%02d.%03d", year, doy, hour, min, sec, msec);
     }
 
 	/**
@@ -256,23 +285,19 @@ public class ProducerKafka {
 	 * Gets the data streams from IRIS, based on fields set up in the constructor.
 	 * @return Returns a list of timeseries objects with the data.
 	 * @throws IOException
+	 * @throws ParseException 
 	 */
-	public List<Timeseries> getIrisMessage() throws IOException {
+	public List<Timeseries> getIrisMessage(Long start, Long end) throws IOException, ParseException {
 		ServiceUtil serviceUtil = ServiceUtil.getInstance();
 		serviceUtil.setAppName("SeismicEventsData");
 		WaveformService waveformService = serviceUtil.getWaveformService();
 		
-		DateFormat dateformat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+		//DateFormat dateformat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 		//TODO: We will want to remove the hardcoding of the time zone and time period
-		dateformat.setTimeZone(TimeZone.getTimeZone("GMT"));
-		Date startDate = null;
-		Date endDate = null;
-		try {
-			startDate = dateformat.parse("2005-02-17T08:00:00");
-			endDate = dateformat.parse("2005-02-17T18:00:00");
-		} catch (ParseException e) {
-			e.printStackTrace();
-		}
+		//dateformat.setTimeZone(TimeZone.getTimeZone("GMT"));
+		
+		Date startDate = new Date(start);//dateformat.parse("2005-02-17T08:00:00");
+		Date endDate = new Date(end);//dateformat.parse("2005-02-17T18:00:00");
 //		this timestamp has 2 segments..
 //		long startTime = Long.parseLong("1113999060000"), endTime = Long.parseLong("1114099060000"); 
 		
@@ -292,8 +317,8 @@ public class ProducerKafka {
 		List<Timeseries> timeSeriesCollection = null;
 		try {
 			timeSeriesCollection = waveformService.fetch(criteria);
-		} catch (Exception e) {
-            Logger.getLogger(ProducerKafka.class.getName()).log(Level.SEVERE, null, e);
+		} catch (Exception ex) {
+            Logger.getLogger(ProducerKafka.class.getName()).log(Level.SEVERE, null, ex);
 		}
 		return timeSeriesCollection;
 	}

@@ -1,16 +1,30 @@
 package main.java.edu.byu.seismicproject.signalprocessing.processing;
 
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.io.PrintWriter;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.GregorianCalendar;
-import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.TimeZone;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.serializers.JavaSerializer;
 
 import main.java.edu.byu.seismicproject.general.band.SeismicBand;
 import main.java.edu.byu.seismicproject.ignite.server.IgniteCacheConfig;
@@ -22,12 +36,14 @@ import main.java.edu.byu.seismicproject.signalprocessing.StreamIdentifier;
 import main.java.edu.byu.seismicproject.signalprocessing.StreamSegment;
 import main.java.edu.byu.seismicproject.signalprocessing.TriggerData;
 
-
 @SuppressWarnings("serial")
 public class SeismicStreamProcessor implements Serializable {
 
     private final DetectionStatisticScanner statisticScanner;
     private final IgniteCache<String, DetectorHolder> detectorCache;
+    private DynamicCorrelationProcessor correlationProcessor;
+    
+    private static Set<String> cacheIds = new LinkedHashSet<String>();
     
     public static void BootstrapDetectors() {
         try {
@@ -46,6 +62,7 @@ public class SeismicStreamProcessor implements Serializable {
     public SeismicStreamProcessor(Ignite igniteInstance) throws Exception {
         boolean triggerOnlyOnCorrelators = true;
         statisticScanner = new DetectionStatisticScanner(triggerOnlyOnCorrelators);
+        correlationProcessor = new DynamicCorrelationProcessor();
         
         detectorCache = igniteInstance.getOrCreateCache(IgniteCacheConfig.detectorHolderCache());
     }
@@ -53,6 +70,7 @@ public class SeismicStreamProcessor implements Serializable {
     public void analyzeSegments(StreamSegment currentSegment, StreamSegment previousSegment) {
         printBlockStartTime(currentSegment);
         DetectorHolder detectors = detectorCache.get(String.valueOf(currentSegment.getId().hashCode()));
+        cacheIds.add(String.valueOf(currentSegment.getId().hashCode()));
         
         if (detectors != null) {
 			StreamSegment combined = StreamSegment.combine(currentSegment, previousSegment);
@@ -62,16 +80,66 @@ public class SeismicStreamProcessor implements Serializable {
 					statisticScanner.addStatistic(statistic);
 				}
 			}
-			
-			HashMap<Integer, Collection<TriggerData>> triggers = statisticScanner.scanForTriggers();
-			if (!triggers.isEmpty()) {				
-				for (Integer detectorID : triggers.keySet()) {
-					processAllTriggers(detectorID, triggers.get(detectorID));
+			//TODO: scanForTriggers should be modified to return a map with detector ID -> collection
+			Collection<TriggerData> triggers = statisticScanner.scanForTriggers();
+			if (!triggers.isEmpty()) {
+				processAllTriggers(triggers);
+			}
+			else {
+				Collection<CorrelationDetector> newDetector = correlationProcessor.createNewCorrelationDetector(combined);
+				if (newDetector != null) {
+					detectors.addNewDetectors(newDetector);
 				}
+				
+				String key = String.valueOf(combined.getId().hashCode());
+				detectorCache.put(key, detectors);
 			}
         }
-        // create new detectors otherwise... I guess...
+        else {
+        	// create absolutely new detector set otherwise... 
+			StreamSegment combined = StreamSegment.combine(currentSegment, previousSegment);
+        	Collection<CorrelationDetector> newDetector = correlationProcessor.createNewCorrelationDetector(combined);
+			if (newDetector != null) {
+				DetectorHolder newDetectorSet = new DetectorHolder(newDetector);
+				
+				String key = String.valueOf(combined.getId().hashCode());
+				detectorCache.put(key, newDetectorSet);
+			}
+        }
+        printDetectorCacheSize(detectorCache);
+        
     }
+    
+    private void printDetectorCacheSize(IgniteCache<String, DetectorHolder> cache) {
+    	int size = 0;
+    	for (DetectorHolder detectors : cache.getAll(cacheIds).values()) {
+    		size += detectors.getDetectors().size();
+    	}
+        System.out.printf("!!!!!!!!SIZE OF THE DETECTOR CACHE = %d!!!!!!!!!!!!!!!\n", size);
+        if (size % 100 == 0) {
+        	try {
+				writeDetectorsToDisk(cache);
+			} catch (Exception e) {
+				Logger.getLogger(SeismicStreamProcessor.class.getName()).log(Level.SEVERE, null, e);
+			}
+        }
+    }
+
+    private void writeDetectorsToDisk(IgniteCache<String, DetectorHolder> cache) throws IOException {
+		Kryo kryo = new Kryo();
+		kryo.register(CorrelationDetector.class, new JavaSerializer());
+		
+    	for (DetectorHolder detectors : cache.getAll(cacheIds).values()) {
+    		for (CorrelationDetector detector : detectors.getDetectors()) {
+				String name = String.format("det%06d", detector.getDetectorid());
+				FileOutputStream fos = new FileOutputStream(name);
+
+				Output output = new Output(fos);
+				kryo.writeObject(output, detector);
+				output.close();
+    		}
+    	}
+	}
 
     private void printBlockStartTime(StreamSegment segment) {
         double time = segment.getStartTime();

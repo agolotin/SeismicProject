@@ -15,7 +15,17 @@ import main.java.edu.byu.seismicproject.general.band.SeismicBand;
 public class DetectorHolder {
 
     private final Collection<CorrelationDetector> detectors;
-    private static int detectoridSequence = 0;
+    public static int detectoridSequence = 0;
+    
+    public DetectorHolder(CorrelationDetector firstDetector) {
+        detectors = new LinkedBlockingQueue<>();
+        this.addNewDetector(firstDetector);
+    }
+    
+    public DetectorHolder(Collection<CorrelationDetector> allDetectors) {
+        detectors = new LinkedBlockingQueue<>();
+        detectors.addAll(allDetectors);
+    }
 
     public DetectorHolder() throws Exception {
         float threshold = 0.6f;
