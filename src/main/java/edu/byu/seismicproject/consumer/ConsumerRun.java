@@ -52,11 +52,11 @@ public class ConsumerRun {
 			// Set up Ignite client here
 			IgniteConfiguration conf = new IgniteConfiguration();
 			// NOTE: TcpCommunicationSpi has to be set up on a distributed cluster
-			TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
-			commSpi.setLocalAddress("localhost");
-			commSpi.setLocalPortRange(100);
+			//TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
+			//commSpi.setLocalAddress("localhost");
+			//commSpi.setLocalPortRange(100);
 			
-			conf.setCommunicationSpi(commSpi);
+			//conf.setCommunicationSpi(commSpi);
 			
 			conf.setGridName("Grid" + "-" + runner.allTopics[0]);
 			conf.setClientMode(true);

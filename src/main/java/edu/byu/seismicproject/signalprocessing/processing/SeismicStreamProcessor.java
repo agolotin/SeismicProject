@@ -36,6 +36,7 @@ import main.java.edu.byu.seismicproject.signalprocessing.StreamIdentifier;
 import main.java.edu.byu.seismicproject.signalprocessing.StreamSegment;
 import main.java.edu.byu.seismicproject.signalprocessing.TriggerData;
 
+
 @SuppressWarnings("serial")
 public class SeismicStreamProcessor implements Serializable {
 
@@ -140,7 +141,7 @@ public class SeismicStreamProcessor implements Serializable {
     		}
     	}
 	}
-
+    
     private void printBlockStartTime(StreamSegment segment) {
         double time = segment.getStartTime();
         String ts = this.getTimeString(time);

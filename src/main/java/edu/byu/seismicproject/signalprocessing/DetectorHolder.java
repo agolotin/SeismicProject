@@ -87,4 +87,10 @@ public class DetectorHolder {
     	this.detectors.add(newDetector);
     }
 
+	public void addNewDetectors(Collection<CorrelationDetector> newDetectors) {
+		if (detectors != null) {
+			detectors.addAll(newDetectors);
+		}
+	}
+
 }
