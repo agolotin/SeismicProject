@@ -1,10 +1,7 @@
 package main.java.edu.byu.seismicproject.signalprocessing.processing;
 
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
-import java.io.PrintWriter;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -81,10 +78,12 @@ public class SeismicStreamProcessor implements Serializable {
 					statisticScanner.addStatistic(statistic);
 				}
 			}
-			//TODO: scanForTriggers should be modified to return a map with detector ID -> collection
-			Collection<TriggerData> triggers = statisticScanner.scanForTriggers();
+			
+			Map<Integer, Collection<TriggerData>> triggers = statisticScanner.scanForTriggers();
 			if (!triggers.isEmpty()) {
-				processAllTriggers(triggers);
+				for (Map.Entry<Integer, Collection<TriggerData>> entry : triggers.entrySet()) {
+					processAllTriggers(entry.getKey(), entry.getValue());
+				}
 			}
 			else {
 				Collection<CorrelationDetector> newDetector = correlationProcessor.createNewCorrelationDetector(combined);
@@ -220,9 +219,8 @@ public class SeismicStreamProcessor implements Serializable {
         }
     }
     
-    private Collection<TriggerData> orderTriggers(Collection<TriggerData> triggers) {
-    	
-    	
+    @SuppressWarnings("unused")
+	private Collection<TriggerData> orderTriggers(Collection<TriggerData> triggers) {
     	return null;
     }
 
