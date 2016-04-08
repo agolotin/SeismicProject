@@ -141,8 +141,8 @@ public class SeismicStreamProcessor implements Serializable {
     		}
     	}
 	}
-    
-    private void printBlockStartTime(StreamSegment segment) {
+
+	private void printBlockStartTime(StreamSegment segment) {
         double time = segment.getStartTime();
         String ts = this.getTimeString(time);
         System.out.println("Processing block starting:    " + ts);

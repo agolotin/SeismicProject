@@ -5,6 +5,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -12,7 +13,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import main.java.edu.byu.seismicproject.general.band.SeismicBand;
 
 
-public class DetectorHolder {
+public class DetectorHolder implements Serializable {
 
     private final Collection<CorrelationDetector> detectors;
     public static int detectoridSequence = 0;

@@ -1,6 +1,8 @@
 package main.java.edu.byu.seismicproject.signalprocessing;
 
-public class CorrelationDetector {
+import java.io.Serializable;
+
+public class CorrelationDetector implements Serializable {
 
     private final double templateAutoCorrelation;
     private final float[] templateData;

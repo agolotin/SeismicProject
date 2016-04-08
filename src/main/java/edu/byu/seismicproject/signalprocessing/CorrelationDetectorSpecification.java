@@ -1,7 +1,9 @@
 
 package main.java.edu.byu.seismicproject.signalprocessing;
 
-public class CorrelationDetectorSpecification implements IDetectorSpecification {
+import java.io.Serializable;
+
+public class CorrelationDetectorSpecification implements IDetectorSpecification, Serializable {
 
     private final float threshold;
     private final float blackoutPeriod;

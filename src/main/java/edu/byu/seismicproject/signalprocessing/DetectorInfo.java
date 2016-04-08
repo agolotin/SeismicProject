@@ -1,7 +1,9 @@
 
 package main.java.edu.byu.seismicproject.signalprocessing;
 
-public class DetectorInfo {
+import java.io.Serializable;
+
+public class DetectorInfo implements Serializable {
 
     private final int detectorid;
 

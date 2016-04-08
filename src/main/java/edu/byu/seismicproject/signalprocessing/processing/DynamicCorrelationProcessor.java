@@ -24,10 +24,10 @@ public class DynamicCorrelationProcessor implements Serializable {
 	
 	private int BLOCK_SIZE;
 	
-	private final float secPerLTA = 60;
+	private final float secPerLTA = 30;
 	private final float secPerSTA = 3;
 	
-	private final int triggerThreshold = 13;
+	private final int triggerThreshold = 15;
 	private final int detriggerThreshold = 5;
 	private final double SNRthreshold = 0;
 	
@@ -118,12 +118,12 @@ public class DynamicCorrelationProcessor implements Serializable {
 			LTA /= NL;
 			triggers[i] = STA / LTA;
 			if (triggers[i] >= triggerThreshold && !thresholdExceeded) {
-				System.out.println("Trigger threshold was exceeded at position: " + (i + offset));
+				//System.out.println("Trigger threshold was exceeded at position: " + (i + offset));
 				windowStart = i + offset;
 				thresholdExceeded = true;
 			}
 			if (thresholdExceeded && triggers[i] <= detriggerThreshold) {
-				System.out.println("Detrigger threshold was exceeded at position: " + (i + offset));
+				//System.out.println("Detrigger threshold was exceeded at position: " + (i + offset));
 				int windowEnd = i + offset;
 				thresholdExceeded = false;
 				
