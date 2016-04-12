@@ -157,15 +157,20 @@ public class ProducerKafka {
 	public void runKafkaProducer() throws IOException, InterruptedException, ParseException {
         // log4j writes to stdout for now
         org.apache.log4j.BasicConfigurator.configure();
+        
+		ServiceUtil serviceUtil = ServiceUtil.getInstance();
+		serviceUtil.setAppName("SeismicEventsData");
+		WaveformService waveformService = serviceUtil.getWaveformService();
         // Pull 10 hour blocks at a time
         Long start = new Long("1108627200000"), increment = new Long("36000000");
+		
         
         for (;;) {
 			Long end = start + increment;
 			System.out.println("Sending data from " + ProducerKafka.getTimeString(start) + 
 					" to " + ProducerKafka.getTimeString(end));
 			
-			List<Timeseries> timeSeriesCollection = this.getIrisMessage(start, end);
+			List<Timeseries> timeSeriesCollection = this.getIrisMessage(waveformService, start, end);
 			List<ExecutorService> producers = new ArrayList<ExecutorService>();
 			for (int k = 0; k < timeSeriesCollection.size(); k++) {
 				Timeseries timeseries = timeSeriesCollection.get(k);
@@ -287,11 +292,7 @@ public class ProducerKafka {
 	 * @throws IOException
 	 * @throws ParseException 
 	 */
-	public List<Timeseries> getIrisMessage(Long start, Long end) throws IOException, ParseException {
-		ServiceUtil serviceUtil = ServiceUtil.getInstance();
-		serviceUtil.setAppName("SeismicEventsData");
-		WaveformService waveformService = serviceUtil.getWaveformService();
-		
+	public List<Timeseries> getIrisMessage(WaveformService waveformService, Long start, Long end) throws IOException, ParseException {
 		//DateFormat dateformat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 		//TODO: We will want to remove the hardcoding of the time zone and time period
 		//dateformat.setTimeZone(TimeZone.getTimeZone("GMT"));
@@ -313,6 +314,7 @@ public class ProducerKafka {
 			
 			criteria.add(network, station, loc_id, channel, startDate, endDate);
 		}
+		criteria.makeDistinctRequests(true);
 		
 		List<Timeseries> timeSeriesCollection = null;
 		try {

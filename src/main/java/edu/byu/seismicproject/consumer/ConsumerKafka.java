@@ -32,9 +32,9 @@ public class ConsumerKafka implements Runnable, Serializable {
 	private final TopicPartition topicPartition;
     private final long tid;
         
-    public ConsumerKafka(Ignite ignite, String group_id, String topic, int par) {
+    public ConsumerKafka(Ignite ignite, String group_id, String topic, int par, int tid) {
     	this.igniteInstance = ignite;
-    	this.tid = par;//Thread.currentThread().getId();
+    	this.tid = tid;//Thread.currentThread().getId();
     	this.topicPartition = new TopicPartition(topic, par);
 
         // Set up the consumer

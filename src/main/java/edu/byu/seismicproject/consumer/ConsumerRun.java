@@ -89,6 +89,7 @@ public class ConsumerRun {
 	public void runConsumers(Ignite ignite) 
 	{
 		KafkaTopics topicCreator = new KafkaTopics(zkHost);
+		int tid = 0;
 		
 		for (int topicNum = 0; topicNum < allTopics.length; topicNum++) {
 			String topic = allTopics[topicNum];
@@ -98,7 +99,7 @@ public class ConsumerRun {
 			
 			final ExecutorService exec = Executors.newFixedThreadPool(partitionsPerTopic);
 			for (int consumerNum = 0; consumerNum < partitionsPerTopic; consumerNum++) {
-				ConsumerKafka consumer = new ConsumerKafka(ignite, groupId, topic, consumerNum);
+				ConsumerKafka consumer = new ConsumerKafka(ignite, groupId, topic, consumerNum, tid++);
 				exec.execute(consumer);
 			}
 			executors.add(exec);
